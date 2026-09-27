@@ -45,14 +45,14 @@ button{font-family:inherit}
 .logo .tag{font-family:"IBM Plex Sans",sans-serif;letter-spacing:.14em;font-weight:500;opacity:.6;margin-top:4px;white-space:nowrap}
 
 /* ---------- 3D viewers ---------- */
-.gl-layer{position:fixed;left:0;top:0;pointer-events:none;z-index:40}
+.v3d-c{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
 .v3d{position:relative;aspect-ratio:5/3;border-radius:var(--r2);overflow:hidden;cursor:grab;touch-action:pan-y;
   background:radial-gradient(90% 90% at 50% 30%,#2a3038 0%,#15181c 60%,#0e1013 100%)}
 .v3d:active{cursor:grabbing}
 .v3d.light{background:radial-gradient(90% 90% at 50% 25%,#ffffff 0%,#eef1f4 55%,#e2e6ea 100%)}
 .v3d>svg{position:absolute;inset:0;width:100%;height:100%;transition:opacity .3s}
 .has3d .v3d.live>svg{opacity:0}
-.v3d-hint{position:absolute;left:14px;bottom:12px;font-size:12px;letter-spacing:.06em;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:4px 10px;border-radius:20px;backdrop-filter:blur(6px);pointer-events:none;display:none}
+.v3d-hint{position:absolute;z-index:2;left:14px;bottom:12px;font-size:12px;letter-spacing:.06em;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:4px 10px;border-radius:20px;backdrop-filter:blur(6px);pointer-events:none;display:none}
 .has3d .v3d.live .v3d-hint{display:block}
 .v3d.light .v3d-hint{color:var(--mu);background:rgba(255,255,255,.7);border-color:var(--line)}
 .hero-v{aspect-ratio:4/3}
@@ -373,7 +373,6 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
   .pn .next{text-align:left}
 }
 
-.searching .gl-layer{visibility:hidden}
 .mp-head{gap:16px;flex-wrap:wrap}
 .drawer{top:0}
 </style>
@@ -1025,19 +1024,19 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
   show();
 })();
 </script>
-<script>/* Corvex 3D product viewer: one WebGL renderer, many scissored views. Needs THREE r128. */
+<script>/* Corvex 3D product viewer: one offscreen WebGL renderer; each viewer box owns a 2D canvas that
+   scrolls natively with the page, so models never lag behind the scroll. Needs THREE r128. */
 (function () {
   var els = document.querySelectorAll('.v3d');
   if (!window.THREE || !els.length) return;
   var T = window.THREE, PI = Math.PI;
-  var canvas = document.createElement('canvas');
-  canvas.className = 'gl-layer';
-  document.body.appendChild(canvas);
+  var canvas = document.createElement('canvas');   // offscreen, never added to the page
   var renderer;
   try {
-    renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-  } catch (e) { canvas.remove(); return; }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+  } catch (e) { return; }
+  var DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth < 700 ? 1.5 : 1.75));
+  renderer.setPixelRatio(1);
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.92;
@@ -1310,7 +1309,30 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
   })();
 
   /* ---------- views ---------- */
-  var views = [];
+  var views = [], byEl = new Map();
+  var visible = new Set();
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      var el = en.target;
+      if (en.isIntersecting) {
+        if (!byEl.has(el) && !el.classList.contains('dead')) {
+          try { var v = makeView(el); if (v) { views.push(v); byEl.set(el, v); } else el.classList.add('dead'); }
+          catch (e) { el.classList.add('dead'); if (window.console) console.warn('3D view failed', el.getAttribute('data-model'), e); }
+        }
+        if (byEl.has(el)) visible.add(byEl.get(el));
+      } else if (byEl.has(el)) visible.delete(byEl.get(el));
+    });
+  }, { rootMargin: '150px 0px' }) : null;
+  var ro = 'ResizeObserver' in window ? new ResizeObserver(function (entries) {
+    entries.forEach(function (en) { var v = byEl.get(en.target); if (v) sizeView(v); });
+  }) : null;
+
+  function sizeView(v) {
+    var w = v.el.clientWidth, h = v.el.clientHeight;
+    v.w = w; v.h = h; v.dirty = true;
+    var pw = Math.max(1, Math.round(w * DPR)), ph = Math.max(1, Math.round(h * DPR));
+    if (v.cv.width !== pw || v.cv.height !== ph) { v.cv.width = pw; v.cv.height = ph; }
+  }
   function makeView(el) {
     var key = el.getAttribute('data-model');
     if (!B[key]) return null;
@@ -1322,9 +1344,11 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
     obj.position.sub(ctr);
     var sh = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: el.classList.contains('light') ? 0.35 : 0.9 }));
     sh.rotation.x = -PI / 2; sh.position.y = -size.y / 2 - 0.01; sh.scale.set(Math.max(size.x, size.z) * 1.5, Math.max(size.x, size.z) * 1.1, 1); scene.add(sh);
-    var radius = size.length() / 2;
-    var cam = new T.PerspectiveCamera(26, 1, 0.05, 100);
-    var v = { el: el, scene: scene, cam: cam, pivot: pivot, radius: radius, rot: 0, vel: 0, drag: false, last: 0, idle: 0, tilt: 0.42, speed: parseFloat(el.getAttribute('data-speed') || '0.18') };
+    var cv = document.createElement('canvas'); cv.className = 'v3d-c'; el.insertBefore(cv, el.firstChild);
+    var v = { el: el, cv: cv, ctx: cv.getContext('2d'), scene: scene, cam: new T.PerspectiveCamera(26, 1, 0.05, 100), pivot: pivot,
+              radius: size.length() / 2, rot: 0, vel: 0, drag: false, last: 0, idle: 0, tilt: 0.42, dirty: true,
+              speed: parseFloat(el.getAttribute('data-speed') || '0.18') };
+    sizeView(v); if (ro) ro.observe(el);
     el.classList.add('live');
     el.addEventListener('pointerdown', function (e) { v.drag = true; v.last = e.clientX; v.idle = 0; el.setPointerCapture && el.setPointerCapture(e.pointerId); });
     el.addEventListener('pointermove', function (e) { if (!v.drag) return; var dx = e.clientX - v.last; v.last = e.clientX; v.rot += dx * 0.01; v.vel = dx * 0.01; });
@@ -1332,37 +1356,43 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
     return v;
   }
-  function ensure() {
-    els = document.querySelectorAll('.v3d:not(.live):not(.dead)');
-    Array.prototype.forEach.call(els, function (el) {
-      var r = el.getBoundingClientRect();
-      if (r.width === 0 || r.bottom < -200 || r.top > window.innerHeight + 400) return;
-      try { var v = makeView(el); if (v) views.push(v); else el.classList.add('dead'); } catch (e) { el.classList.add('dead'); if (window.console) console.warn('3D view failed', el.getAttribute('data-model'), e); }
-    });
+  function watchAll() {
+    Array.prototype.forEach.call(document.querySelectorAll('.v3d:not([data-w])'), function (el) { el.setAttribute('data-w', '1'); if (io) io.observe(el); });
   }
-  var lastT = performance.now(), W = 0, H = 0, lastEnsure = 0;
+  watchAll();
+  // routes are shown/hidden by the page script; recheck newly visible viewers cheaply
+  window.addEventListener('hashchange', function () { setTimeout(function () { visible.forEach(function (v) { sizeView(v); }); }, 50); });
+
+  var bufW = 0, bufH = 0, lastT = performance.now(), scrollingUntil = 0;
+  // While the page is scrolling, keep each canvas's last frame (it scrolls natively) and do no GPU work.
+  window.addEventListener('scroll', function () { scrollingUntil = performance.now() + 180; }, { passive: true });
+  window.addEventListener('wheel', function () { scrollingUntil = performance.now() + 180; }, { passive: true });
+  window.addEventListener('touchmove', function () { scrollingUntil = performance.now() + 180; }, { passive: true });
+  var reduceQ = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function frame(now) {
+    requestAnimationFrame(frame);
     var dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-    var w = window.innerWidth, h = window.innerHeight;
-    if (w !== W || h !== H) { W = w; H = h; renderer.setSize(w, h, false); canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; }
-    if (now - lastEnsure > 250) { lastEnsure = now; ensure(); }
-    renderer.setScissorTest(false); renderer.clear(); renderer.setScissorTest(true);
-    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    for (var i = 0; i < views.length; i++) {
-      var v = views[i], r = v.el.getBoundingClientRect();
-      if (r.width === 0 || r.bottom < 0 || r.top > h || r.right < 0 || r.left > w) continue;
+    if (!visible.size || document.hidden) return;
+    if (now < scrollingUntil && !views.some(function (v) { return v.drag; })) return;
+    var reduce = reduceQ && reduceQ.matches;
+    visible.forEach(function (v) {
+      if (!v.w || !v.h) return;
+      var moving = v.drag || Math.abs(v.vel) > 1e-4 || (!reduce && v.idle > 1.2);
       if (!v.drag) { v.idle += dt; v.vel *= 0.94; v.rot += v.vel; if (!reduce && v.idle > 1.2) v.rot += v.speed * dt; }
+      if (!moving && !v.dirty) return;
+      v.dirty = false;
+      var pw = v.cv.width, ph = v.cv.height;
+      if (pw > bufW || ph > bufH) { bufW = Math.max(bufW, pw); bufH = Math.max(bufH, ph); renderer.setSize(bufW, bufH, false); }
       v.pivot.rotation.y = v.rot;
-      var aspect = r.width / r.height, vf = v.cam.fov * PI / 180;
-      var hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
+      var aspect = v.w / v.h, vf = v.cam.fov * PI / 180, hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
       var d = Math.max(v.radius / Math.sin(vf / 2), v.radius / Math.sin(hf / 2)) * 0.84;
       v.cam.aspect = aspect; v.cam.position.set(0, d * Math.sin(v.tilt), d * Math.cos(v.tilt)); v.cam.lookAt(0, 0, 0); v.cam.updateProjectionMatrix();
-      var bottom = h - r.bottom;
-      renderer.setViewport(r.left, bottom, r.width, r.height);
-      renderer.setScissor(Math.max(0, r.left), Math.max(0, bottom), r.width, r.height);
+      renderer.setViewport(0, 0, pw, ph); renderer.setScissor(0, 0, pw, ph); renderer.setScissorTest(true);
+      renderer.clear();
       renderer.render(v.scene, v.cam);
-    }
-    requestAnimationFrame(frame);
+      v.ctx.clearRect(0, 0, pw, ph);
+      v.ctx.drawImage(canvas, 0, bufH - ph, pw, ph, 0, 0, pw, ph);
+    });
   }
   requestAnimationFrame(frame);
 })();
