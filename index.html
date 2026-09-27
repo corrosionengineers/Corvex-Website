@@ -1333,7 +1333,7 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
     'guide-rings': function () { var g = new T.Group(); g.add(ring(1, 0.86, 0.42, M.glassF, { gap: 0.05 })); g.add(at(ring(0.68, 0.58, 0.3, M.peek, { gap: 0.05 }), 1.85, -0.06, 0.25)); return g; },
     'bushes-liners': function () { var g = new T.Group(); g.add(at(tube(0.55, 0.36, 1.2, M.bronzeF), -0.2, 0, 0)); g.add(at(tube(0.4, 0.24, 0.7, M.carbon), 1.1, -0.15, 0.6)); g.add(at(box(1.6, 0.05, 0.25, M.bronzeF), 0.1, -0.53, 1.05)); return g; },
     'valve-guides': function () { var g = new T.Group(); g.add(at(tube(0.32, 0.14, 0.9, M.ptfe), -0.4, 0, 0)); g.add(at(tube(0.26, 0.1, 0.7, M.peek), 0.55, -0.06, 0.45)); g.add(at(puck(0.28, 0.2, M.peek), 1.25, -0.22, -0.1)); return g; },
-    'replacement-spares': function () { return assembly(); },
+    'replacement-spares': function () { return piston(); },
     'cutaway': function () { return cutaway(); },
     'compressor-oil': function () {
       var g = new T.Group();
@@ -1377,7 +1377,15 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
       cols.forEach(function (m, i) { var p = puck(0.34, 0.18, m); p.position.set((i - 3) * 0.8, 0, (i % 2) * 0.35); g.add(p); });
       return g;
     },
-    'hero': function () { return assembly(); },
+    'hero': function () {
+      var g = new T.Group();
+      var p = piston(1); p.position.set(0, 0.9, 0); g.add(p);
+      var r = stack(M.carbon, 3, 0.62, 0.52, 0.1, 0.05); r.position.set(-1.35, -0.2, 0.9); g.add(r);
+      var v = valvePlate(0.62, 0.13, 0.04, M.peek); v.position.set(0.1, -0.18, 1.05); g.add(v);
+      var bz = ring(0.5, 0.36, 0.14, M.bronze, { segments: 3, gap: 0.06 }); bz.position.set(1.35, -0.16, 0.85); g.add(bz);
+      var sp = spring(0.5, 0.02, 110, 0.008, M.steel); sp.position.set(1.35, -0.16, 0.85); g.add(sp);
+      return g;
+    },
   };
   function fluoro(c, withTube) {
     return function () { var mt = clear(c), g = new T.Group(); g.add(at(rod(0.34, 1.7, mt), -0.6, 0, -0.2)); g.add(at(sheet(1.1, 0.08, 0.8, mt), 1.2, -0.3, 0.1, 0.25)); if (withTube) g.add(at(tube(0.12, 0.09, 1.9, mt), -0.4, -0.23, 0.55)); return wrap(g, -0.2); };
@@ -1432,7 +1440,7 @@ blockquote{margin:0;background:var(--g0);border-radius:var(--r);padding:30px;fon
     var cv = document.createElement('canvas'); cv.className = 'v3d-c'; el.insertBefore(cv, el.firstChild);
     var v = { el: el, cv: cv, ctx: cv.getContext('2d'), scene: scene, cam: new T.PerspectiveCamera(26, 1, 0.05, 100), pivot: pivot,
               radius: size.length() / 2, rot: 0, vel: 0, drag: false, last: 0, idle: 0, tilt: 0.42, dirty: true,
-              speed: parseFloat(el.getAttribute('data-speed') || '0.18'), swing: /^(hero|cutaway|replacement-spares)$/.test(key), t: 0 };
+              speed: parseFloat(el.getAttribute('data-speed') || '0.18'), swing: false, t: 0 };
     if (v.swing) { v.base = -0.3; v.rot = v.base; v.tilt = 0.32; v.zoom = 0.8; }
     sizeView(v); if (ro) ro.observe(el);
     el.classList.add('live');
