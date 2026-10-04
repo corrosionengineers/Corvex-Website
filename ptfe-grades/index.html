@@ -559,7 +559,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
 .vreg ul li:hover{border-color:var(--acc-l)}.vreg .ar{opacity:.55;margin-left:2px}
 .vreg-all{display:inline-block;margin-top:14px;color:#9fbcff;font-weight:600;font-size:14px;text-decoration:none}
 .vreg-all:hover{color:#fff}
-</style>
+.v3d[data-auto] .v3d-hint{display:none!important}.v3d[data-auto]{cursor:pointer}</style>
 
 </head>
 <body>
@@ -1147,6 +1147,81 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     lb('Piston rings', 0.28, 0.67, 0); lb('Rider ring', 0.85, 0.675, 0); lb('Packing rings', -0.9, 0.27, 0);
     lb('Pressure breaker', -0.45, 0.27, 0); lb('Oil scraper rings', -2.02, 0.25, 0); lb('PEEK valve plate', 2.15, 0.52, 0.45); return g; };
   B.fep = fluoro(0xe8f3f8, true); B.pfa = fluoro(0xf0f5f7, true); B.pctfe = fluoro(0xe2e9ef, true); B.pvdf = fluoro(0xf4f3ec, false);
+  /* ---------- category families: real-looking groups, packed in rows (big at back, small in front), no overlaps ---------- */
+  function family(list, opt) {
+    opt = opt || {}; var gap = opt.gap || 0.24, Wmax = opt.w || 4.2, g = new T.Group(), items = [];
+    list.forEach(function (it) {
+      var o = typeof it[0] === 'function' ? it[0]() : B[it[0]](), w = new T.Group(); w.add(o);
+      if (it[2]) o.rotation.y += it[2];
+      var b = new T.Box3().setFromObject(w), s = b.getSize(new T.Vector3()), c = b.getCenter(new T.Vector3());
+      var k = it[1] / Math.max(s.x, s.z); o.position.set(-c.x, -b.min.y, -c.z); w.scale.setScalar(k);
+      items.push({ w: w, sx: s.x * k, sz: s.z * k });
+    });
+    var rows = [], cur = [], cw = 0;
+    items.forEach(function (it) { if (cur.length && cw + gap + it.sx > Wmax) { rows.push(cur); cur = []; cw = 0; } cw += (cur.length ? gap : 0) + it.sx; cur.push(it); });
+    if (cur.length) rows.push(cur);
+    var z = 0;
+    rows.forEach(function (r, ri) {
+      var tw = r.reduce(function (a, it) { return a + it.sx; }, 0) + gap * (r.length - 1), x = -tw / 2, dz = Math.max.apply(null, r.map(function (it) { return it.sz; }));
+      var off = (ri % 2) ? gap * 0.8 : 0;
+      r.forEach(function (it) { it.w.position.set(x + it.sx / 2 + off, 0, z + dz / 2); x += it.sx + gap; g.add(it.w); });
+      z += dz + gap * 1.6;
+    });
+    var bb = new T.Box3().setFromObject(g), cc = bb.getCenter(new T.Vector3()), out = new T.Group();
+    g.position.set(-cc.x, -bb.min.y, -cc.z); out.add(g); out.userData.real = true; return out;
+  }
+  function one(fn) { return function () { var g = new T.Group(); g.add(fn()); return g; }; }
+  function gear(R, n, h, bore, mat) { var sh = new T.Shape(), Rr = R * 0.86, N = n * 4;
+    for (var i = 0; i <= N; i++) { var a = i / N * TAU, ph = i % 4, rr = (ph === 1 || ph === 2) ? R : Rr; var x = rr * Math.cos(a), y = rr * Math.sin(a); if (i === 0) sh.moveTo(x, y); else sh.lineTo(x, y); }
+    var hp = new T.Path(); hp.absarc(0, 0, bore, 0, TAU, true); sh.holes.push(hp);
+    var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: h, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 2, curveSegments: 32 }), mat); m.rotation.x = -PI / 2; return m; }
+  function hexNut(Rf, r, h, mat) { var sh = new T.Shape(); for (var i = 0; i < 6; i++) { var a = i * PI / 3 + PI / 6; if (i === 0) sh.moveTo(Rf * Math.cos(a), Rf * Math.sin(a)); else sh.lineTo(Rf * Math.cos(a), Rf * Math.sin(a)); } sh.closePath();
+    var hp = new T.Path(); hp.absarc(0, 0, r, 0, TAU, true); sh.holes.push(hp);
+    var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: h, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 2, curveSegments: 48 }), mat); m.rotation.x = -PI / 2; return m; }
+  function perfDisc(R, h, mat) { var sh = new T.Shape(); sh.absarc(0, 0, R, 0, TAU, false); var hs = [[0, 0]];
+    for (var i = 0; i < 6; i++) hs.push([0.55 * R * Math.cos(i * PI / 3), 0.55 * R * Math.sin(i * PI / 3)]);
+    hs.forEach(function (p) { var hp = new T.Path(); hp.absarc(p[0], p[1], R * 0.13, 0, TAU, true); sh.holes.push(hp); });
+    var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: h, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2, curveSegments: 48 }), mat); m.rotation.x = -PI / 2; return m; }
+  function lathe(pts, mat) { var p = pts.map(function (q) { return new T.Vector2(q[0], q[1]); }); p.push(p[0]); var mm = mat.clone(); mm.side = T.DoubleSide; return new T.Mesh(new T.LatheGeometry(p, 96), mm); }
+  function flangedBush(mat) { return lathe([[0.16, 0], [0.34, 0], [0.34, 0.08], [0.22, 0.08], [0.22, 0.46], [0.16, 0.46]], mat); }
+  function ballSeat(mat) { var p = [[0.3, 0], [0.56, 0], [0.56, 0.2], [0.47, 0.2]]; for (var i = 1; i <= 10; i++) { var a = i / 10; p.push([0.47 - 0.15 * Math.sin(a * PI / 2), 0.2 - 0.12 * (1 - Math.cos(a * PI / 2))]); } p.push([0.3, 0.06]); return lathe(p, mat); }
+  function fitting(mat) { var g = new T.Group(); g.add(at(new T.Mesh(new T.CylinderGeometry(0.17, 0.17, 0.5, 64), mat), 0, 0.37, 0));
+    for (var i = 0; i < 8; i++) { var t = new T.Mesh(new T.TorusGeometry(0.172, 0.016, 8, 64), mat); t.rotation.x = PI / 2; t.position.y = 0.18 + i * 0.05; g.add(t); }
+    g.add(hexNut(0.26, 0.08, 0.13, mat)); return g; }
+  function lying(fn) { return function () { var g = new T.Group(); g.add(fn()); return g; }; }
+  // grade materials (realistic tones)
+  var GD = {
+    virgin: std(0xf3f4f2, 0.5, 0, { clearcoat: 0.2, clearcoatRoughness: 0.6 }),
+    glass: std(0xddd6c2, 0.6, 0), carbon: std(0x17181b, 0.72, 0.05), bronze: std(0x6a4426, 0.62, 0.12),
+    graphite: std(0x34373c, 0.6, 0.1), moly: std(0x5d6a78, 0.5, 0.15), peek: M.peek,
+    peekGF: std(0x9b8a6c, 0.55, 0), peekCF: std(0x1a1b1e, 0.38, 0.1, { clearcoat: 0.5, clearcoatRoughness: 0.3 })
+  };
+  function pk(R, mat, metal) { var g = new T.Group(), r = R * 0.6;
+    [0, 1].forEach(function (i) { var x = ring(R, r, R * 0.28, mat, { segments: i ? 6 : 3, gap: 0.05 }); x.position.y = i * R * 0.3; g.add(x);
+      var sp = spring(R, R * 0.06, 70, R * 0.024, M.steel); sp.position.y = i * R * 0.3 + R * 0.14; g.add(sp); });
+    return g; }
+  B['cat-compressor'] = function () { return family([
+    [one(function () { var g = new T.Group(); for (var i = 0; i < 3; i++) { var x = ring(0.5, 0.41, 0.12, M.carbon, { gap: 0.04 }); x.position.y = i * 0.135; x.rotation.y = i * 1.3; g.add(x); } return g; }), 1.2],
+    [one(function () { var g = new T.Group(), rb = lband(0.5, 0.44, 0.34, 0.12, 0.45, 14, 0.09, 0.025, std(0x3b2414, 0.6, 0.15)); rb.position.y = 0.17; rb.rotation.y = -0.9; g.add(rb); return g; }), 1.2],
+    [one(function () { var g = new T.Group(); g.add(valvePlate(0.5, 0.12, 0.045, M.peek)); return g; }), 1.0],
+    [one(function () { return pk(0.23, M.carbon); }), 0.46], [one(function () { return ring(0.23, 0.13, 0.09, M.peek, { gap: 0 }); }), 0.46],
+    [one(function () { return pk(0.21, M.bronze); }), 0.42]], { w: 4.0 }); };
+  B['cat-ptfe'] = function () { return family([
+    [one(function () { return sheet(1.3, 0.1, 0.9, GD.virgin); }), 1.3], [one(function () { return rod(0.32, 1.5, GD.carbon); }), 1.45, 0.25], [one(function () { return tube(0.36, 0.24, 1.0, GD.glass); }), 1.0, -0.3],
+    [one(function () { return bellows(1.0, 0.3, 0.22, 5, GD.virgin); }), 0.95, 0.2], [one(function () { return flangedBush(GD.bronze); }), 0.62], [one(function () { return ring(0.45, 0.33, 0.2, GD.graphite, { gap: 0.04 }); }), 0.72],
+    [one(function () { return fitting(GD.virgin); }), 0.5], [one(function () { return hexNut(0.3, 0.13, 0.22, GD.moly); }), 0.55], [one(function () { return perfDisc(0.4, 0.07, GD.glass); }), 0.62],
+    [one(function () { return new T.Mesh(new T.SphereGeometry(0.2, 48, 32), GD.carbon); }), 0.32], [one(function () { return new T.Mesh(new T.SphereGeometry(0.2, 48, 32), GD.virgin); }), 0.32]], { w: 4.7 }); };
+  B['cat-peek'] = function () { return family([
+    [one(function () { return rod(0.32, 1.6, GD.peek); }), 1.5, 0.2], [one(function () { return sheet(1.0, 0.1, 0.75, GD.peekGF); }), 1.05, -0.2], [one(function () { return tube(0.36, 0.2, 0.7, GD.peekCF); }), 0.8, -0.4],
+    [one(function () { var g = new T.Group(); g.add(valvePlate(0.6, 0.14, 0.05, GD.peekCF)); return g; }), 0.95], [one(function () { return ballSeat(GD.peek); }), 0.85],
+    [one(function () { return gear(0.55, 22, 0.16, 0.14, GD.peek); }), 0.9], [one(function () { return flangedBush(GD.peekCF); }), 0.55]], { w: 4.4 }); };
+  function coil(R, r, turns, pitch, mat) { var c = new T.Curve(); c.getPoint = function (t, o) { var a = t * turns * TAU; return (o || new T.Vector3()).set(R * Math.cos(a), r + t * turns * pitch, R * Math.sin(a)); };
+    var g = new T.Group(); g.add(new T.Mesh(new T.TubeGeometry(c, turns * 80, r, 20, false), mat)); return g; }
+  B['cat-fluoro'] = function () { var mt = std(0xa9d2ea, 0.16, 0, { transparent: true, opacity: 0.9, clearcoat: 1, clearcoatRoughness: 0.08 });
+    return family([[one(function () { return sheet(1.5, 0.1, 1.0, mt); }), 1.3], [one(function () { return rod(0.26, 1.7, mt); }), 1.35, 0.3],
+      [one(function () { return tube(0.42, 0.26, 0.6, mt); }), 0.62], [function () { return coil(0.5, 0.045, 3, 0.1, mt); }, 0.95],
+      [one(function () { var g = new T.Group(); [0, 1, 2].forEach(function (i) { g.add(at(tube(0.075 - i * 0.015, 0.055 - i * 0.012, 1.6, mt), 0, 0.075 - i * 0.015, i * 0.2)); }); return g; }), 1.2, 0.2]], { w: 4.4 }); };
+
 
   /* ---------- contact shadow ---------- */
   var shadowTex = (function () {
@@ -1192,6 +1267,15 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     var box3 = new T.Box3().setFromObject(pivot), ctr = box3.getCenter(new T.Vector3()), size = box3.getSize(new T.Vector3());
     obj.position.sub(ctr);
     var sh = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: el.classList.contains('light') ? 0.35 : 0.9 }));
+    if (obj.userData && obj.userData.real) {
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+      var mS = Math.max(size.x, size.z) * 0.75 + 0.5;
+      var kl = new T.DirectionalLight(0xffffff, 0.75); kl.position.set(-3, 7, 4); kl.castShadow = true; kl.shadow.mapSize.set(1024, 1024);
+      var scm = kl.shadow.camera; scm.left = -mS; scm.right = mS; scm.top = mS; scm.bottom = -mS; scm.near = 0.5; scm.far = 30; kl.shadow.radius = 5; kl.shadow.bias = -0.0008; scene.add(kl);
+      scene.add(new T.HemisphereLight(0xffffff, 0x8a9099, 0.18));
+      var gp = new T.Mesh(new T.PlaneGeometry(40, 40), new T.ShadowMaterial({ opacity: 0.22 })); gp.rotation.x = -PI / 2; gp.position.y = -size.y / 2 + 0.002; gp.receiveShadow = true; scene.add(gp);
+      obj.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    }
     sh.rotation.x = -PI / 2; sh.position.y = -size.y / 2 - 0.01; sh.scale.set(Math.max(size.x, size.z) * 1.5, Math.max(size.x, size.z) * 1.1, 1); scene.add(sh);
     var labels = [];
     if (/^(hero|replacement-spares|assembly)$/.test(key)) obj.traverse(function (o) { if (o.userData && o.userData.label) labels.push(o); });
@@ -1203,6 +1287,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     if (el.getAttribute('data-zoom')) v.zoom = parseFloat(el.getAttribute('data-zoom'));
     sizeView(v); if (ro) ro.observe(el);
     el.classList.add('live');
+    if (el.hasAttribute('data-auto')) { v.swing = true; v.base = 0; v.rot = 0; v.idle = 5; v.tilt = 0.64; }
     (function () { var sx = 0, sy = 0;
       function route(l) { l = (l || '').toLowerCase();
         var m = [['valve plate','valve-plates'],['pressure breaker','pressure-breakers'],['packing','packing-rings'],['rider','rider-rings'],['scraper','oil-wiper-scraper'],['wiper','oil-wiper-scraper'],['piston ring','piston-rings'],['guide','guide-rings']];
