@@ -1297,6 +1297,51 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
       [stand(0.16, 10, 0.045, 0.022, 1.3), 1.0],
       [function () { return spiralRoll(0.14, 8, 0.035, 0.02, 1.5, V, 0.75); }, 1.45, 0.35],
       [stand(0.12, 7, 0.035, 0.018, 0.8), 0.7]], { w: 3.0, gap: 0.14 }); };
+  var MOD = std(0x86b9e2, 0.25, 0, { transparent: true, opacity: 0.78, clearcoat: 0.9, clearcoatRoughness: 0.12, envMapIntensity: 0.7 });
+  function seatRing(R, r, h, mat) { // ball valve seat: flat back, spherical-ish inner lip
+    var p = [[r, 0], [R, 0], [R, h], [r + (R - r) * 0.55, h]]; for (var i = 1; i <= 8; i++) { var a = i / 8; p.push([r + (R - r) * 0.55 * (1 - a), h - h * 0.55 * Math.sin(a * PI / 2)]); } p.push([r, h * 0.3]); return lathe(p, mat); }
+  function gasket(R, r, h, mat) { var g = new T.Group(); g.add(ring(R, r, h, mat, { gap: 0, bevel: 0.006 }));
+    for (var i = 0; i < 8; i++) { var a = i * PI / 4, hole = new T.Mesh(new T.CylinderGeometry(0.045, 0.045, h + 0.01, 24), std(0xb9bec4, 0.6, 0)); hole.position.set((R + r) / 2 * Math.cos(a), h / 2, (R + r) / 2 * Math.sin(a)); } return g; }
+  function flangeGasket(R, r, h, nb, mat) { var sh = new T.Shape(); sh.absarc(0, 0, R, 0, TAU, false); var hp = new T.Path(); hp.absarc(0, 0, r, 0, TAU, true); sh.holes.push(hp);
+    for (var i = 0; i < nb; i++) { var a = i * TAU / nb, b = new T.Path(); b.absarc((R + r) / 2 * Math.cos(a), (R + r) / 2 * Math.sin(a), (R - r) * 0.13, 0, TAU, true); sh.holes.push(b); }
+    var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: h, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2, curveSegments: 64 }), mat); m.rotation.x = -PI / 2; return m; }
+  function vRing(R, r, h, n, mat) { var g = new T.Group(); for (var i = 0; i < n; i++) { var p = [[r, 0], [r + (R - r) * 0.5, h * 0.45], [R, 0], [R, h * 0.35], [r + (R - r) * 0.5, h * 0.8], [r, h * 0.35]]; var m = lathe(p, mat); m.position.y = i * h * 0.5; g.add(m); } return g; }
+  B['p-modified-ptfe'] = function () { var F = family([
+    [one(function () { return flangeGasket(0.6, 0.3, 0.05, 8, MOD); }), 1.35],
+    [one(function () { return seatRing(0.5, 0.3, 0.2, MOD); }), 1.0],
+    [one(function () { return vRing(0.42, 0.3, 0.16, 3, MOD); }), 0.85],
+    [one(function () { return ring(0.32, 0.24, 0.12, MOD, { gap: 0, bevel: 0.008 }); }), 0.66],
+    [one(function () { return seatRing(0.3, 0.17, 0.13, MOD); }), 0.6],
+    [one(function () { return ring(0.24, 0.18, 0.06, MOD, { gap: 0, bevel: 0.005 }); }), 0.48]], { w: 3.2, gap: 0.16 }); F.traverse(function (o) { if (o.isMesh) { o.receiveShadow = false; o.castShadow = false; o.renderOrder = 1; } }); return F; };
+  var ETC = std(0x2b1406, 0.8, 0, { envMapIntensity: 0.35 });
+  function spiralRoll2(r0, turns, pitch, t, W, capM, sideM, tail) { var g = spiralRoll(r0, turns, pitch, t, W, sideM, tail); g.children[0].material = [capM, sideM]; return g; }
+  B['p-etched-ptfe'] = function () { var V = GD.virgin; return family([
+    [function () { return spiralRoll2(0.14, 9, 0.032, 0.018, 1.3, V, ETC, 0.9); }, 1.45, 0.35],
+    [function () { var g = new T.Group(), r = spiralRoll2(0.12, 12, 0.02, 0.012, 0.28, V, ETC, 0); r.rotation.x = -PI / 2; var w = new T.Group(); w.add(r); var b = new T.Box3().setFromObject(w); r.position.y -= b.min.y; g.add(w); return g; }, 0.7],
+    [function () { var g = new T.Group(), r = spiralRoll2(0.1, 10, 0.018, 0.01, 0.18, V, ETC, 0); r.rotation.x = -PI / 2; var w = new T.Group(); w.add(r); var b = new T.Box3().setFromObject(w); r.position.y -= b.min.y; g.add(w); return g; }, 0.5],
+    [one(function () { var g = new T.Group(), m = new T.Mesh(new T.BoxGeometry(1.7, 0.16, 1.2), [V, V, ETC, V, V, V]); m.position.y = 0.08; g.add(m);
+      var m2 = new T.Mesh(new T.BoxGeometry(1.3, 0.1, 0.9), [V, V, ETC, V, V, V]); m2.position.set(0.15, 0.16 + 0.05 + 0.002, 0.08); m2.rotation.y = 0.22; g.add(m2); return g; }), 1.6, -0.2]], { w: 3.3, gap: 0.16 }); };
+  B['p-anti-static-ptfe'] = function () { var A = AS; return family([
+    [lyr(0.3, 1.8, A, -0.3), 1.8], [one(function () { return sheet(1.3, 0.1, 0.9, CBS); }), 1.3, 0.2],
+    [lyt(0.32, 0.2, 1.0, A, 0.4), 1.0], [one(function () { return flangedBush(A); }), 0.6],
+    [one(function () { return ring(0.4, 0.28, 0.14, A, { gap: 0, bevel: 0.008 }); }), 0.72], [one(function () { return seatRing(0.32, 0.18, 0.14, A); }), 0.62]], { w: 3.3, gap: 0.18 }); };
+  var STL = std(0x7d858e, 0.42, 0.85, { envMapIntensity: 1.0 }), SS = std(0xe6e9ec, 0.1, 1, { envMapIntensity: 1.4 });
+  function dimPad(w, t, d, mat, round) { var g = new T.Group(), base;
+    if (round) { base = new T.Mesh(new T.CylinderGeometry(w / 2, w / 2, t, 96), mat); } else base = box(w, t, d, mat);
+    base.position.y = t / 2; g.add(base);
+    var disc = new T.CircleGeometry(0.032, 20), DM = std(0x8f979f, 0.7, 0), pts = [], s = 0.11;
+    for (var x = -w / 2 + s * 0.7; x < w / 2 - s * 0.4; x += s) for (var z = -d / 2 + s * 0.7, j = 0; z < d / 2 - s * 0.4; z += s, j++) { var xx = x + (j % 2 ? s / 2 : 0); if (round ? (xx * xx + z * z < (w / 2 - 0.06) * (w / 2 - 0.06)) : (xx < w / 2 - 0.05)) pts.push([xx, z]); }
+    var inst = new T.InstancedMesh(disc, DM, pts.length), o = new T.Object3D();
+    pts.forEach(function (p, k) { o.position.set(p[0], t + 0.002, p[1]); o.rotation.set(-PI / 2, 0, 0); o.updateMatrix(); inst.setMatrixAt(k, o.matrix); });
+    g.add(inst); return g; }
+  function plate(w, t, d, mat, y) { var m = box(w, t, d, mat); m.position.y = (y || 0) + t / 2; return m; }
+  B['p-bearing-pads'] = function () { var V = GD.virgin; return family([
+    [one(function () { var g = new T.Group(); g.add(plate(1.6, 0.16, 1.2, STL)); var p = dimPad(1.2, 0.05, 0.85, V); p.position.y = 0.16; g.add(p);
+        g.add(plate(1.4, 0.04, 1.0, SS, 0.62)); var top = plate(1.7, 0.16, 1.3, STL, 0.66); g.add(top); return g; }), 1.7, -0.25],
+    [one(function () { var g = new T.Group(); g.add(plate(1.0, 0.1, 0.75, STL)); var p = dimPad(0.86, 0.05, 0.62, V); p.position.y = 0.1; g.add(p); return g; }), 1.0, 0.3],
+    [one(function () { return dimPad(0.9, 0.06, 0.65, V); }), 0.9, -0.2],
+    [one(function () { return dimPad(0.7, 0.06, 0.7, V, true); }), 0.7],
+    [one(function () { return plate(0.9, 0.04, 0.65, SS); }), 0.9, 0.35]], { w: 3.5, gap: 0.18 }); };
 
 
   /* ---------- contact shadow ---------- */
@@ -1350,7 +1395,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
       var scm = kl.shadow.camera; scm.left = -mS; scm.right = mS; scm.top = mS; scm.bottom = -mS; scm.near = 0.5; scm.far = 30; kl.shadow.radius = 5; kl.shadow.bias = -0.0008; scene.add(kl);
       scene.add(new T.HemisphereLight(0xffffff, 0x8a9099, 0.18));
       var gp = new T.Mesh(new T.PlaneGeometry(40, 40), new T.ShadowMaterial({ opacity: 0.22 })); gp.rotation.x = -PI / 2; gp.position.y = -size.y / 2 + 0.002; gp.receiveShadow = true; scene.add(gp);
-      obj.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      obj.traverse(function (o) { if (o.isMesh) { var ns = o.material && o.material.transparent; o.castShadow = !ns; o.receiveShadow = !ns; } });
     }
     sh.rotation.x = -PI / 2; sh.position.y = -size.y / 2 - 0.01; sh.scale.set(Math.max(size.x, size.z) * 1.5, Math.max(size.x, size.z) * 1.1, 1); scene.add(sh);
     var labels = [];
