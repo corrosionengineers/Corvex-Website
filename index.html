@@ -1371,6 +1371,45 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     [one(function () { return dimPad(0.9, 0.06, 0.65, V); }), 0.9, -0.2],
     [one(function () { return dimPad(0.7, 0.06, 0.7, V, true); }), 0.7],
     [one(function () { return plate(0.9, 0.04, 0.65, SS); }), 0.9, 0.35]], { w: 3.5, gap: 0.18 }); };
+  function groovedSpool(mat) { var R = 0.42, r = 0.16, g = new T.Group(), y = 0, seq = [[R, 0.14], [R - 0.07, 0.07], [R, 0.11], [R - 0.07, 0.07], [R, 0.11], [R - 0.07, 0.07], [R, 0.18]];
+    seq.forEach(function (q) { var m = ring(q[0], r, q[1], mat, { gap: 0, bevel: q[0] === R ? 0.01 : 0 }); m.position.y = y; g.add(m); y += q[1]; }); return g; }
+  function chamferBush(mat) { return lathe([[0.2, 0], [0.4, 0], [0.4, 0.1], [0.28, 0.12], [0.28, 0.55], [0.25, 0.58], [0.2, 0.58]], mat); }
+  B['p-machined-components'] = function () { var V = GD.virgin; return family([
+    [one(function () { return bellows(1.2, 0.34, 0.25, 6, V); }), 1.35, 0.35],
+    [one(function () { return groovedSpool(GD.carbon); }), 0.85],
+    [one(function () { return fitting(GD.glass); }), 0.6],
+    [one(function () { return chamferBush(GD.bronze); }), 0.75],
+    [one(function () { return hexNut(0.32, 0.14, 0.24, V); }), 0.6],
+    [one(function () { return perfDisc(0.42, 0.08, GD.glass); }), 0.75]], { w: 3.2, gap: 0.16 }); };
+  /* --- machined components, inspired by typical PTFE part ranges --- */
+  function valveBall(R, b, mat) { var g = new T.Group(), s = new T.Mesh(new T.SphereGeometry(R, 64, 48), mat); s.position.y = R; g.add(s);
+    var hole = new T.Mesh(new T.CylinderGeometry(b, b, R * 2.02, 48, 1, true), std(0xbfc4c9, 0.6, 0, { side: T.DoubleSide })); hole.rotation.z = PI / 2; hole.position.y = R; g.add(hole);
+    [-1, 1].forEach(function (k) { var c = new T.Mesh(new T.RingGeometry(b, R * Math.sqrt(1 - (b / R) * (b / R)) * 0.999, 48), mat); c.material = mat.clone(); c.material.side = T.DoubleSide; c.rotation.y = PI / 2; c.position.set(k * R * Math.sqrt(1 - (b / R) * (b / R)) * 0.995, R, 0); }); return g; }
+  function flBellows(mat) { var p = [[0.2, 0], [0.44, 0], [0.44, 0.07], [0.3, 0.07]], L = 1.0, n = 7, y0 = 0.07;
+    for (var i = 0; i <= n * 12; i++) { var u = i / (n * 12), y = y0 + 0.04 + u * L; p.push([0.24 + 0.08 * (0.5 - 0.5 * Math.cos(u * TAU * n)), y]); }
+    var yt = y0 + 0.04 + L + 0.04; p.push([0.3, yt]); p.push([0.44, yt]); p.push([0.44, yt + 0.07]); p.push([0.2, yt + 0.07]);
+    var m = lathe(p, mat), g = new T.Group(); m.rotation.z = PI / 2; m.position.set((yt + 0.07) / 2, 0.44, 0); g.add(m); return g; }
+  function teeFit(mat) { var g = new T.Group(), body = box(0.34, 0.34, 0.34, mat); body.position.y = 0.17; g.add(body);
+    [[1, 0, 0], [-1, 0, 0], [0, 0, 1]].forEach(function (d) { var c = new T.Mesh(new T.CylinderGeometry(0.14, 0.14, 0.28, 48), mat);
+      if (d[0]) c.rotation.z = PI / 2; else c.rotation.x = PI / 2; c.position.set(d[0] * 0.3, 0.17, d[2] * 0.3); g.add(c);
+      var n = new T.Mesh(new T.CylinderGeometry(0.16, 0.16, 0.08, 6), mat); if (d[0]) n.rotation.z = PI / 2; else n.rotation.x = PI / 2; n.position.set(d[0] * 0.2, 0.17, d[2] * 0.2); g.add(n); });
+    return g; }
+  function impeller(mat) { var g = new T.Group(), hub = new T.Mesh(new T.CylinderGeometry(0.12, 0.16, 0.3, 48), mat); hub.position.y = 0.15; g.add(hub);
+    for (var i = 0; i < 12; i++) { var bl = box(0.3, 0.26, 0.035, mat); var w = new T.Group(); bl.position.set(0.25, 0.14, 0); bl.rotation.x = 0.35; w.add(bl); w.rotation.y = i * TAU / 12; g.add(w); } return g; }
+  function threadedNipple(mat) { var g = new T.Group(); g.add(ring(0.42, 0.25, 0.08, mat, { gap: 0, bevel: 0.006 }));
+    var body = ring(0.3, 0.25, 0.55, mat, { gap: 0 }); body.position.y = 0.08; g.add(body);
+    for (var i = 0; i < 16; i++) { var t = new T.Mesh(new T.TorusGeometry(0.3, 0.012, 6, 64), mat); t.rotation.x = PI / 2; t.position.y = 0.14 + i * 0.03; g.add(t); } return g; }
+  function hoseBarb(mat) { var g = new T.Group(), y = 0, seq = [[0.16, 0.12, 6], [0.12, 0.12, 64], [0.1, 0.06, 64], [0.13, 0.07, 64], [0.1, 0.06, 64], [0.13, 0.07, 64], [0.1, 0.12, 64]];
+    seq.forEach(function (q) { var c = new T.Mesh(new T.CylinderGeometry(q[0], q[0] * (q[2] === 64 && q[0] > 0.12 ? 0.78 : 1), q[1], q[2]), mat); c.position.y = y + q[1] / 2; g.add(c); y += q[1]; }); return g; }
+  function castRing(mat) { var sh = new T.Shape(), R = 0.6, r = 0.36, n = 10; sh.absarc(0, 0, R, 0, TAU, false); var hp = new T.Path();
+    for (var i = 0; i <= n * 4; i++) { var a = i / (n * 4) * TAU, ph = i % 4, rr = (ph === 1 || ph === 2) ? r + 0.07 : r; var x = rr * Math.cos(a), y = rr * Math.sin(a); if (i === 0) hp.moveTo(x, y); else hp.lineTo(x, y); }
+    sh.holes.push(hp); var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 2, curveSegments: 64 }), mat); m.rotation.x = -PI / 2; return m; }
+  B['p-machined-components'] = function () { var V = GD.virgin; return family([
+    [function () { return flBellows(V); }, 1.4], [function () { var g = valveBall(0.4, 0.17, V); g.rotation.y = 0.9; return g; }, 0.8], [one(function () { return castRing(GD.carbon); }), 1.0],
+    [one(function () { return threadedNipple(V); }), 0.8], [one(function () { return impeller(V); }), 0.65], [one(function () { return teeFit(GD.glass); }), 0.8], [one(function () { return chamferBush(GD.bronze); }), 0.6],
+    [one(function () { return hoseBarb(V); }), 0.32], [one(function () { return gear(0.4, 18, 0.12, 0.1, V); }), 0.62], [one(function () { return perfDisc(0.42, 0.06, V); }), 0.62],
+    [one(function () { return ring(0.32, 0.2, 0.12, GD.carbon, { gap: 0, bevel: 0.008 }); }), 0.5], [function () { var g = new T.Group(), s = new T.Mesh(new T.SphereGeometry(0.2, 48, 32), V); s.position.y = 0.2; g.add(s); return g; }, 0.36],
+    [one(function () { return ring(0.42, 0.34, 0.05, RED, { gap: 0 }); }), 0.62], [one(function () { return ring(0.3, 0.2, 0.06, MOD, { gap: 0 }); }), 0.46]], { w: 3.9, gap: 0.14 }); };
 
 
   /* ---------- contact shadow ---------- */
