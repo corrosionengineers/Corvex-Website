@@ -1189,7 +1189,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   // grade materials (realistic tones)
   var GD = {
     virgin: std(0xf3f4f2, 0.5, 0, { clearcoat: 0.2, clearcoatRoughness: 0.6 }),
-    glass: std(0xddd6c2, 0.6, 0), carbon: std(0x17181b, 0.72, 0.05), bronze: std(0x6a4426, 0.62, 0.12),
+    glass: std(0x737a82, 0.6, 0, { envMapIntensity: 0.6 }), carbon: std(0x070809, 0.5, 0.05, { envMapIntensity: 0.3 }), bronze: std(0x3e2410, 0.6, 0.12, { envMapIntensity: 0.6 }),
     graphite: std(0x34373c, 0.6, 0.1), moly: std(0x5d6a78, 0.5, 0.15), peek: M.peek,
     peekGF: std(0x9b8a6c, 0.55, 0), peekCF: std(0x1a1b1e, 0.38, 0.1, { clearcoat: 0.5, clearcoatRoughness: 0.3 })
   };
@@ -1220,6 +1220,60 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     return family([[one(function () { return sheet(1.5, 0.1, 1.0, mt); }), 1.3], [one(function () { return rod(0.26, 1.7, mt); }), 1.35, 0.3],
       [one(function () { return tube(0.42, 0.26, 0.6, mt); }), 0.62], [function () { return coil(0.5, 0.045, 3, 0.1, mt); }, 0.95],
       [one(function () { var g = new T.Group(); [0, 1, 2].forEach(function (i) { g.add(at(tube(0.075 - i * 0.015, 0.055 - i * 0.012, 1.6, mt), 0, 0.075 - i * 0.015, i * 0.2)); }); return g; }), 1.2, 0.2]], { w: 4.4 }); };
+  /* ---------- product pages ---------- */
+  function rodsRow(spec, opt) { opt = opt || {}; var g = new T.Group(), z = 0, gap = opt.gap || 0.12;
+    spec.forEach(function (p, i) { var R = p[0], L = p[1], m = rod(R, L, p[2]); m.position.set(p[3] || 0, R, z + R); m.castShadow = m.receiveShadow = true; g.add(m); z += 2 * R + gap; });
+    var bb = new T.Box3().setFromObject(g), cc = bb.getCenter(new T.Vector3()), out = new T.Group(); g.position.set(-cc.x, 0, -cc.z); out.add(g); out.rotation.y = opt.ry == null ? -0.75 : opt.ry; var o2 = new T.Group(); o2.add(out); o2.userData.real = true; return o2; }
+  B['p-extruded-rods'] = function () { return rodsRow([
+    [0.07, 2.2, GD.carbon, 0.1], [0.11, 2.5, GD.virgin, -0.05], [0.16, 2.7, GD.glass, 0.05], [0.22, 2.9, GD.virgin, 0], [0.13, 2.4, GD.carbon, -0.1], [0.09, 2.3, GD.glass, 0.15]]); };
+  function upr(R, H, mat) { return function () { var g = new T.Group(), m = new T.Mesh(new T.CylinderGeometry(R, R, H, 96), mat); m.position.y = H / 2; g.add(m); return g; }; }
+  function lyr(R, L, mat, ry) { return function () { var g = new T.Group(), m = rod(R, L, mat); m.position.y = R; g.add(m); g.rotation.y = ry || 0; return g; }; }
+  B['p-moulded-rods'] = function () { return family([
+    [upr(0.5, 1.0, GD.virgin), 1.0], [upr(0.36, 0.8, GD.carbon), 0.72], [lyr(0.42, 1.1, GD.glass, 0.5), 1.1],
+    [lyr(0.32, 0.9, GD.bronze, -0.4), 0.9], [upr(0.28, 0.6, GD.glass), 0.56], [lyr(0.26, 0.8, GD.virgin, 0.3), 0.8]], { w: 3.0, gap: 0.2 }); };
+  function tubesRow(spec, ry) { var g = new T.Group(), z = 0, gap = 0.1;
+    spec.forEach(function (p) { var R = p[0], m = tube(R, R * p[3], p[1], p[2]); var w = new T.Group(); w.add(m); var b = new T.Box3().setFromObject(w), c = b.getCenter(new T.Vector3());
+      m.position.x -= c.x; m.position.z -= c.z; w.position.set(p[4] || 0, R, z + R); g.add(w); z += 2 * R + gap; });
+    g.traverse(function (o) { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
+    var bb = new T.Box3().setFromObject(g), cc = bb.getCenter(new T.Vector3()), out = new T.Group(); g.position.set(-cc.x, 0, -cc.z); out.add(g); out.rotation.y = ry; var o2 = new T.Group(); o2.add(out); o2.userData.real = true; return o2; }
+  var VT = std(0xf6f7f5, 0.4, 0, { transparent: true, opacity: 0.9, clearcoat: 0.3, clearcoatRoughness: 0.4 });
+  var AS = std(0x0a0b0d, 0.42, 0.06, { clearcoat: 0.35, clearcoatRoughness: 0.4, envMapIntensity: 0.3 });
+  B['p-paste-extruded-tubes'] = function () { return tubesRow([
+    [0.07, 2.3, GD.carbon, 0.72, 0.1], [0.12, 2.6, VT, 0.84, -0.05], [0.16, 2.8, VT, 0.86, 0], [0.12, 2.5, GD.glass, 0.8, 0.12], [0.1, 2.4, AS, 0.78, -0.1], [0.06, 2.2, VT, 0.7, 0.15]], -0.75); };
+  function upt(R, r, H, mat) { return function () { var g = new T.Group(); g.add(ring(R, r, H, mat, { gap: 0, bevel: 0.012 })); return g; }; }
+  function lyt(R, r, L, mat, ry) { return function () { var g = new T.Group(), m = tube(R, r, L, mat), w = new T.Group(); w.add(m); var b = new T.Box3().setFromObject(w), c = b.getCenter(new T.Vector3()); m.position.x -= c.x; m.position.z -= c.z; w.position.y = R; g.add(w); g.rotation.y = ry || 0; return g; }; }
+  B['p-moulded-tubes-bushes'] = function () { return family([
+    [upt(0.5, 0.32, 0.9, GD.virgin), 1.0], [lyt(0.4, 0.24, 1.1, GD.carbon, 0.5), 1.1], [upt(0.34, 0.2, 0.6, GD.bronze), 0.68],
+    [lyt(0.32, 0.2, 0.8, GD.glass, -0.45), 0.85], [upt(0.28, 0.17, 0.42, GD.glass), 0.56], [upt(0.3, 0.2, 0.5, GD.carbon), 0.6]], { w: 3.0, gap: 0.2 }); };
+  var RED = std(0x260302, 0.58, 0, { envMapIntensity: 0.45 }), BRS = std(0x24130a, 0.62, 0.1, { envMapIntensity: 0.5 }), CBS = std(0x050506, 0.6, 0.05, { envMapIntensity: 0.25 });
+  B['p-moulded-sheets'] = function () { var g = new T.Group(), y = 0;
+    [[CBS, 0.12, 2.0, 1.4], [GD.virgin, 0.09, 1.95, 1.35], [GD.glass, 0.1, 1.9, 1.3], [BRS, 0.07, 1.85, 1.28], [RED, 0.06, 1.8, 1.25]].forEach(function (p, i) {
+      var w = new T.Group(), m = box(p[2], p[1], p[3], p[0]); m.position.set(p[2] / 2, p[1] / 2, -p[3] / 2); w.add(m);
+      w.position.set(-0.9, y, 0.65); w.rotation.y = i * 0.16; g.add(w); y += p[1] + 0.003; });
+    g.traverse(function (o) { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
+    var bb = new T.Box3().setFromObject(g), cc = bb.getCenter(new T.Vector3()), out = new T.Group(); g.position.x -= cc.x; g.position.z -= cc.z; out.add(g); out.rotation.y = -0.35; out.userData.real = true; return out; };
+  // thin ribbon swept along a 2D path (x,y) with width along z
+  function ribbon(pts, wz, t, mat) { var pos = [], N = pts.length;
+    for (var i = 0; i < N - 1; i++) { var a = pts[i], b = pts[i + 1];
+      pos.push(a[0], a[1], -wz / 2, b[0], b[1], -wz / 2, b[0], b[1], wz / 2, a[0], a[1], -wz / 2, b[0], b[1], wz / 2, a[0], a[1], wz / 2); }
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+    var mm = mat.clone(); mm.side = T.DoubleSide; return new T.Mesh(g, mm); }
+  // roll lying along Z (axis), with layer rings on the end and film unwinding flat along +x
+  function skRoll(R, Rc, L, mat, tail) { var g = new T.Group(), core = new T.Mesh(new T.CylinderGeometry(R, R, L, 96), mat); core.rotation.x = PI / 2; core.position.y = R; g.add(core);
+    var hole = new T.Mesh(new T.CylinderGeometry(Rc, Rc, L + 0.004, 48), std(0x8a8f96, 0.5, 0.2)); hole.rotation.x = PI / 2; hole.position.y = R; g.add(hole);
+    for (var i = 1; i <= 7; i++) { var rr = Rc + (R - Rc) * i / 8; [L / 2 + 0.002, -L / 2 - 0.002].forEach(function (z) { var c = new T.Mesh(new T.TorusGeometry(rr, 0.0025, 6, 90), M.dimple); c.position.set(0, R, z); g.add(c); }); }
+    if (tail) { var p = [], a; for (a = PI / 2; a >= -PI / 2; a -= 0.05) p.push([R * 1.004 * Math.cos(a), R + R * 1.004 * Math.sin(a)]); p.push([0, 0.003]); p.push([tail, 0.003]); g.add(ribbon(p, L * 0.98, 0, mat)); }
+    return g; }
+  function skBillet(R, L, mat, tail) { var g = new T.Group(), b = new T.Mesh(new T.CylinderGeometry(R, R, L, 96), mat); b.rotation.x = PI / 2; b.position.y = R; g.add(b); var hb = new T.Mesh(new T.CylinderGeometry(R * 0.22, R * 0.22, L + 0.004, 48), std(0x8a8f96, 0.5, 0.2)); hb.rotation.x = PI / 2; hb.position.y = R; g.add(hb);
+    var p = [], a; for (a = 0.35; a >= -PI / 2; a -= 0.05) p.push([R * 1.006 * Math.cos(a), R + R * 1.006 * Math.sin(a)]); p.push([0, 0.004]); p.push([tail, 0.004]);
+    var rb = ribbon(p, L * 0.96, 0, mat); g.add(rb);
+    // lift curl at the peel point
+    return g; }
+  B['p-skived-sheets'] = function () { return family([
+    [function () { return skBillet(0.62, 1.7, GD.virgin, 1.3); }, 2.3, -0.7],
+    [function () { return skRoll(0.32, 0.08, 1.2, GD.virgin, 1.1); }, 1.6, -0.5],
+    [function () { return skRoll(0.24, 0.07, 0.8, GD.virgin, 0); }, 0.8, 0.5],
+    [function () { return skRoll(0.18, 0.06, 0.5, GD.virgin, 0); }, 0.55, -0.2]], { w: 3.6, gap: 0.22 }); };
 
 
   /* ---------- contact shadow ---------- */
