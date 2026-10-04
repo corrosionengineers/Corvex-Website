@@ -1466,6 +1466,20 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   B['p-guide-rings'] = function () { return family([
     [guideR(0.6, 0.3, GD.bronze), 1.25], [guideR(0.55, 0.22, GD.carbon, -0.95), 1.12], [guideR(0.5, 0.26, GD.peek, -0.8), 1.02],
     [tapeRoll(GD.bronze), 1.25, 0.3], [guideR(0.38, 0.16, GD.carbon, -0.9), 0.76]], { w: 3.6, gap: 0.22 }); };
+  function splitBush(R, r, H, mat) { return function () { var g = new T.Group(), m = ring(R, r, H, mat, { gap: 0.07, bevel: 0.006 }); m.rotation.y = -1.57; g.add(m); return g; }; }
+  B['p-bushes-liners'] = function () { return family([
+    [upt(0.5, 0.36, 0.9, GD.bronze), 1.0], [one(function () { return flangedBush(GD.carbon); }), 0.95], [upt(0.48, 0.44, 1.0, GD.glass), 0.96],
+    [splitBush(0.36, 0.27, 0.55, GD.carbon), 0.72], [one(function () { return flangedBush(GD.bronze); }), 0.66], [upt(0.3, 0.2, 0.45, GD.glass), 0.6], [splitBush(0.3, 0.23, 0.4, GD.bronze), 0.6]], { w: 3.6, gap: 0.28 }); };
+  function gButton(R, mat) { return function () { var g = new T.Group(), a = ring(R, R * 0.3, R * 0.35, mat, { gap: 0, bevel: 0.006 }), b = ring(R * 0.62, R * 0.3, R * 0.5, mat, { gap: 0, bevel: 0.006 }); b.position.y = R * 0.35; g.add(a); g.add(b); return g; }; }
+  function gSleeve(R, H, mat) { return function () { var g = new T.Group(), a = ring(R * 1.3, R * 0.62, R * 0.25, mat, { gap: 0, bevel: 0.006 }), b = ring(R, R * 0.62, H, mat, { gap: 0, bevel: 0.006 }); b.position.y = R * 0.25; g.add(a); g.add(b); return g; }; }
+  function springBtn(R, mat) { return function () { var g = new T.Group(), a = new T.Mesh(new T.CylinderGeometry(R, R, R * 0.3, 48), mat); a.position.y = R * 0.15; g.add(a);
+    var b = new T.Mesh(new T.CylinderGeometry(R * 0.55, R * 0.55, R * 0.45, 48), mat); b.position.y = R * 0.3 + R * 0.225; g.add(b);
+    var sp = helixSpring(R * 0.45, R * 0.06, 5, R * 0.28, M.steel); sp.position.y = R * 0.3; g.add(sp); return g; }; }
+  function helixSpring(R, w, turns, pitch, mat) { var c = new T.Curve(); c.getPoint = function (t, o) { var a = t * turns * TAU; return (o || new T.Vector3()).set(R * Math.cos(a), t * turns * pitch, R * Math.sin(a)); };
+    var g = new T.Group(); g.add(new T.Mesh(new T.TubeGeometry(c, turns * 40, w, 10, false), mat)); return g; }
+  B['p-valve-guides'] = function () { var C = GD.peekCF, G = GD.glass; return family([
+    [gSleeve(0.3, 0.7, C), 0.78], [gSleeve(0.28, 0.6, G), 0.72], [springBtn(0.3, C), 0.6], [springBtn(0.28, G), 0.56],
+    [gButton(0.32, C), 0.64], [gButton(0.28, G), 0.56], [gButton(0.24, C), 0.48], [springBtn(0.24, C), 0.48]], { w: 3.1, gap: 0.2 }); };
 
 
   /* ---------- contact shadow ---------- */
