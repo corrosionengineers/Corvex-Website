@@ -764,7 +764,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   try {
     renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
   } catch (e) { return; }
-  var DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth < 700 ? 1.25 : 1.5));
+  var DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth < 700 ? 1.5 : 1.75));
   renderer.setPixelRatio(1);
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping;
@@ -1539,7 +1539,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     var box3 = new T.Box3().setFromObject(pivot), ctr = box3.getCenter(new T.Vector3()), size = box3.getSize(new T.Vector3());
     obj.position.sub(ctr);
     var sh = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: el.classList.contains('light') ? 0.35 : 0.9 }));
-    var MOB = window.innerWidth < 900 || /Mobi|Android/i.test(navigator.userAgent);
+    var MOB = false;
     if (obj.userData && obj.userData.real && MOB) {
       (obj.userData.blobs || []).forEach(function (b) { var bl = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.5 }));
         bl.rotation.x = -PI / 2; bl.position.set(b[0], 0.003, b[1]); bl.scale.set(b[2] * 1.25, b[3] * 1.25, 1); obj.add(bl); });
@@ -1642,7 +1642,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   function frame(now) {
     requestAnimationFrame(frame);
     pump(now);
-    if (now - lastT < 32) return;
+    if (now - lastT < 15) return;
     var dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (!visible.size || document.hidden) return;
     if (now < scrollingUntil && !views.some(function (v) { return v.drag; })) return;
