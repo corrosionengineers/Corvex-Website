@@ -1463,6 +1463,18 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   B['p-oil-wiper-scraper'] = function () { return family([
     [scraperR(0.55, MBZ), 1.1], [wiperR(0.55, GD.carbon), 1.1], [scraperR(0.5, GD.peek), 1.0],
     [wiperR(0.42, GD.peek), 0.82], [scraperR(0.42, GD.carbon), 0.82], [wiperR(0.4, MBZ), 0.78]], { w: 3.9, gap: 0.22 }); };
+  function portPlate(R, r, h, nport, mat) { var sh = new T.Shape(); sh.absarc(0, 0, R, 0, TAU, false); var hp = new T.Path(); hp.absarc(0, 0, r, 0, TAU, true); sh.holes.push(hp);
+    [[0.48, nport], [0.78, Math.round(nport * 1.6)]].forEach(function (row) { var rr = r + (R - r) * row[0], pr = (R - r) * 0.11; for (var i = 0; i < row[1]; i++) { var a = i * TAU / row[1] + (row[0] > 0.6 ? PI / row[1] : 0), p = new T.Path(); p.absarc(rr * Math.cos(a), rr * Math.sin(a), pr, 0, TAU, true); sh.holes.push(p); } });
+    var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: h, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1, curveSegments: 40 }), mat); m.rotation.x = -PI / 2; return m; }
+  B['p-valve-plates'] = function () { var P = GD.peek, C = GD.peekCF; function vp(R, r, h, m) { return one(function () { var g = new T.Group(); g.add(valvePlate(R, r, h, m)); return g; }); }
+    return family([
+      [vp(0.62, 0.14, 0.05, P), 1.25], [vp(0.6, 0.14, 0.05, C), 1.2], [one(function () { return portPlate(0.55, 0.12, 0.05, 8, C); }), 1.1],
+      [one(function () { return portPlate(0.45, 0.1, 0.045, 7, P); }), 0.9], [vp(0.42, 0.1, 0.04, C), 0.84], [vp(0.38, 0.09, 0.04, P), 0.76]], { w: 4.0, gap: 0.2 }); };
+  function guideR(R, H, mat, ry) { return function () { var g = new T.Group(), b = lband(R, R * 0.93, H, 0.08, 0.4, 0, 0, 0, mat); b.position.y = H / 2; b.rotation.y = ry == null ? -0.85 : ry; g.add(b); return g; }; }
+  function tapeRoll(mat) { return function () { var g = new T.Group(), r = spiralRoll(0.12, 6, 0.022, 0.016, 0.3, mat, 1.0); g.add(r); return g; }; }
+  B['p-guide-rings'] = function () { return family([
+    [guideR(0.6, 0.3, GD.bronze), 1.25], [guideR(0.55, 0.22, GD.carbon, -0.95), 1.12], [guideR(0.5, 0.26, GD.peek, -0.8), 1.02],
+    [tapeRoll(GD.bronze), 1.25, 0.3], [guideR(0.38, 0.16, GD.carbon, -0.9), 0.76]], { w: 3.6, gap: 0.22 }); };
 
 
   /* ---------- contact shadow ---------- */
