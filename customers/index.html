@@ -559,7 +559,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
 .vreg ul li:hover{border-color:var(--acc-l)}.vreg .ar{opacity:.55;margin-left:2px}
 .vreg-all{display:inline-block;margin-top:14px;color:#9fbcff;font-weight:600;font-size:14px;text-decoration:none}
 .vreg-all:hover{color:#fff}
-.v3d[data-auto] .v3d-hint{display:none!important}.v3d[data-auto]{cursor:pointer}</style>
+.v3d[data-auto] .v3d-hint{display:none!important}.v3d[data-auto]{cursor:pointer}.v3d.static{cursor:pointer}.v3d.static>img.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}.v3d.static .v3d-hint{display:none!important}</style>
 
 </head>
 <body>
@@ -760,7 +760,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   try {
     renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
   } catch (e) { return; }
-  var DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth < 700 ? 1.5 : 1.75));
+  var DPR = Math.min(window.devicePixelRatio || 1, (window.innerWidth < 700 ? 1.25 : 1.5));
   renderer.setPixelRatio(1);
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping;
@@ -1030,14 +1030,14 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     if (scale) g.scale.setScalar(scale);
     return g;
   }
-  function band2(R,r,H,gap,off,nsl,slw,sld,mat,bot,top){var N=360,pos=[],t0=gap/2+off,t1=2*PI-gap/2+off;
+  function band2(R,r,H,gap,off,nsl,slw,sld,mat,bot,top){var N=200,pos=[],t0=gap/2+off,t1=2*PI-gap/2+off;
     function Ro(t){if(!nsl)return R;var a=((t%(2*PI))+2*PI)%(2*PI),p=2*PI/nsl,k=a%p;return (Math.abs(k-p/2)<slw/2)?R-sld:R;}
     function P(i,v,o){var t=t0+(t1-t0)*i/N,rr=o?Ro(t):r;return [rr*Math.cos(t),(v-0.5)*H,rr*Math.sin(t)];}
     function q(a,b,c,d){pos.push.apply(pos,a.concat(b,c,a,c,d));}
     for(var i=0;i<N;i++){q(P(i,0,1),P(i,1,1),P(i+1,1,1),P(i+1,0,1));q(P(i,0,0),P(i+1,0,0),P(i+1,1,0),P(i,1,0));if(top)q(P(i,1,1),P(i,1,0),P(i+1,1,0),P(i+1,1,1));if(bot)q(P(i,0,1),P(i+1,0,1),P(i+1,0,0),P(i,0,0));}
     q(P(0,0,1),P(0,0,0),P(0,1,0),P(0,1,1));q(P(N,0,1),P(N,1,1),P(N,1,0),P(N,0,0));
     var g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.computeVertexNormals();var mm=mat.clone();mm.side=T.DoubleSide;return new T.Mesh(g,mm);}
-  function lband(R,r,H,gap,skew,nsl,slw,sld,mat){var g=new T.Group(),L=24;for(var k=0;k<L;k++){var m=band2(R,r,H/L,gap,skew*(k/(L-1)-0.5),nsl,slw,sld,mat,k==0,k==L-1);m.position.y=(k+0.5)*H/L-H/2;g.add(m);}return g;}
+  function lband(R,r,H,gap,skew,nsl,slw,sld,mat){var g=new T.Group(),L=skew?10:1;for(var k=0;k<L;k++){var m=band2(R,r,H/L,gap,skew*(k/(L-1)-0.5),nsl,slw,sld,mat,k==0,k==L-1);m.position.y=(k+0.5)*H/L-H/2;g.add(m);}return g;}
   var B = {
     'piston-rings': function () { return stack(M.carbon, 3, 1, 0.84, 0.16, 0.05); },
     'rider-rings': function () { var g = new T.Group(); var a = lband(1, 0.9, 0.55, 0.1, 0.45, 14, 0.09, 0.05, M.bronzeF); a.rotation.y = -1.25; g.add(a); var b = lband(0.68, 0.6, 0.38, 0.1, 0.45, 10, 0.1, 0.04, M.carbon); b.rotation.y = -1.25; b.position.set(1.85, -0.085, 0.25); g.add(b); return g; },
@@ -1165,7 +1165,8 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
       z += dz + gap * 1.6;
     });
     var bb = new T.Box3().setFromObject(g), cc = bb.getCenter(new T.Vector3()), out = new T.Group();
-    g.position.set(-cc.x, -bb.min.y, -cc.z); out.add(g); out.userData.real = true; return out;
+    g.position.set(-cc.x, -bb.min.y, -cc.z); out.add(g); out.userData.real = true;
+    out.userData.blobs = items.map(function (it) { return [it.w.position.x - cc.x, it.w.position.z - cc.z, it.sx, it.sz]; }); return out;
   }
   function one(fn) { return function () { var g = new T.Group(); g.add(fn()); return g; }; }
   function gear(R, n, h, bore, mat) { var sh = new T.Shape(), Rr = R * 0.86, N = n * 4;
@@ -1395,7 +1396,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     [riderB(0.6, 0.42, 16, GD.bronze), 1.3], [riderB(0.52, 0.32, 14, GD.carbon, -1.0), 1.12],
     [riderB(0.46, 0.36, 12, GD.glass, -0.8), 1.0], [riderB(0.4, 0.26, 12, GD.peek, -0.95), 0.86]], { w: 2.7, gap: 0.24 }); };
   function riderStep(R, H, ns, mat, ry) { return function () { var g = new T.Group(), w = new T.Group();
-    function half(off) { var hg = new T.Group(), Lk = 12; for (var k = 0; k < Lk; k++) { var m = band2(R, R * 0.88, H / 2 / Lk, 0.14, off, ns, 0.09, R * 0.05, mat, k == 0, k == Lk - 1); m.position.y = (k + 0.5) * H / 2 / Lk - H / 4; hg.add(m); } return hg; } var lo = half(0), hi = half(0.4);
+    function half(off) { var hg = new T.Group(), Lk = 1; for (var k = 0; k < Lk; k++) { var m = band2(R, R * 0.88, H / 2 / Lk, 0.14, off, ns, 0.09, R * 0.05, mat, k == 0, k == Lk - 1); m.position.y = (k + 0.5) * H / 2 / Lk - H / 4; hg.add(m); } return hg; } var lo = half(0), hi = half(0.4);
     lo.position.y = H / 4; hi.position.y = 3 * H / 4; w.add(lo); w.add(hi); w.rotation.y = ry == null ? -1.6 : ry; g.add(w); return g; }; }
   B['p-rider-rings'] = function () { return family([
     [riderB(0.6, 0.42, 16, GD.bronze), 1.3], [riderStep(0.52, 0.34, 14, GD.carbon, -1.75), 1.12],
@@ -1489,17 +1490,19 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
 
   /* ---------- views ---------- */
   var views = [], byEl = new Map();
-  var visible = new Set();
+  var visible = new Set(), pendQ = [];
+  function pump(now) { if (!pendQ.length || now < scrollingUntil) return; var t0 = performance.now();
+    while (pendQ.length && performance.now() - t0 < 12) { var el = pendQ.shift(); el.__q = 0; if (!el.__vis || byEl.has(el) || el.classList.contains('dead')) continue;
+      try { var v = makeView(el); if (v) { views.push(v); byEl.set(el, v); visible.add(v); } else el.classList.add('dead'); }
+      catch (e) { el.classList.add('dead'); if (window.console) console.warn('3D view failed', el.getAttribute('data-model'), e); } break; } }
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     entries.forEach(function (en) {
       var el = en.target;
       if (en.isIntersecting) {
-        if (!byEl.has(el) && !el.classList.contains('dead')) {
-          try { var v = makeView(el); if (v) { views.push(v); byEl.set(el, v); } else el.classList.add('dead'); }
-          catch (e) { el.classList.add('dead'); if (window.console) console.warn('3D view failed', el.getAttribute('data-model'), e); }
-        }
+        el.__vis = true;
+        if (!byEl.has(el) && !el.classList.contains('dead')) { if (!el.__q) { el.__q = 1; pendQ.push(el); } }
         if (byEl.has(el)) visible.add(byEl.get(el));
-      } else if (byEl.has(el)) visible.delete(byEl.get(el));
+      } else { el.__vis = false; if (byEl.has(el)) visible.delete(byEl.get(el)); }
     });
   }, { rootMargin: '150px 0px' }) : null;
   var ro = 'ResizeObserver' in window ? new ResizeObserver(function (entries) {
@@ -1514,7 +1517,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   }
   function makeView(el) {
     var key = el.getAttribute('data-model');
-    if (!B[key]) return null;
+    if (!B[key] || el.classList.contains('static')) return null;
     var scene = new T.Scene(); scene.environment = env;
     var key2 = new T.DirectionalLight(0xffffff, 0.6); key2.position.set(3, 6, 4); scene.add(key2);
     var obj = B[key]();
@@ -1522,10 +1525,16 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     var box3 = new T.Box3().setFromObject(pivot), ctr = box3.getCenter(new T.Vector3()), size = box3.getSize(new T.Vector3());
     obj.position.sub(ctr);
     var sh = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: el.classList.contains('light') ? 0.35 : 0.9 }));
-    if (obj.userData && obj.userData.real) {
+    var MOB = window.innerWidth < 900 || /Mobi|Android/i.test(navigator.userAgent);
+    if (obj.userData && obj.userData.real && MOB) {
+      (obj.userData.blobs || []).forEach(function (b) { var bl = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.5 }));
+        bl.rotation.x = -PI / 2; bl.position.set(b[0], 0.003, b[1]); bl.scale.set(b[2] * 1.25, b[3] * 1.25, 1); obj.add(bl); });
+      scene.add(new T.HemisphereLight(0xffffff, 0x8a9099, 0.18)); var kl2 = new T.DirectionalLight(0xffffff, 0.75); kl2.position.set(-3, 7, 4); scene.add(kl2);
+    }
+    if (obj.userData && obj.userData.real && !MOB) {
       renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
       var mS = Math.max(size.x, size.z) * 0.75 + 0.5;
-      var kl = new T.DirectionalLight(0xffffff, 0.75); kl.position.set(-3, 7, 4); kl.castShadow = true; kl.shadow.mapSize.set(1024, 1024);
+      var kl = new T.DirectionalLight(0xffffff, 0.75); kl.position.set(-3, 7, 4); kl.castShadow = true; kl.shadow.mapSize.set(window.innerWidth < 700 ? 512 : 1024, window.innerWidth < 700 ? 512 : 1024);
       var scm = kl.shadow.camera; scm.left = -mS; scm.right = mS; scm.top = mS; scm.bottom = -mS; scm.near = 0.5; scm.far = 30; kl.shadow.radius = 5; kl.shadow.bias = -0.0008; scene.add(kl);
       scene.add(new T.HemisphereLight(0xffffff, 0x8a9099, 0.18));
       var gp = new T.Mesh(new T.PlaneGeometry(40, 40), new T.ShadowMaterial({ opacity: 0.22 })); gp.rotation.x = -PI / 2; gp.position.y = -size.y / 2 + 0.002; gp.receiveShadow = true; scene.add(gp);
@@ -1610,7 +1619,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     c.restore();
   }
 
-  var bufW = 0, bufH = 0, lastT = performance.now(), scrollingUntil = 0;
+  var bufW = Math.ceil(Math.min(window.innerWidth, 1400) * DPR), bufH = Math.ceil(Math.min(window.innerWidth, 1400) * DPR * 0.75), lastT = performance.now(), scrollingUntil = 0; renderer.setSize(bufW, bufH, false);
   // While the page is scrolling, keep each canvas's last frame (it scrolls natively) and do no GPU work.
   window.addEventListener('scroll', function () { scrollingUntil = performance.now() + 180; }, { passive: true });
   window.addEventListener('wheel', function () { scrollingUntil = performance.now() + 180; }, { passive: true });
@@ -1618,6 +1627,8 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   var reduceQ = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function frame(now) {
     requestAnimationFrame(frame);
+    pump(now);
+    if (now - lastT < 32) return;
     var dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (!visible.size || document.hidden) return;
     if (now < scrollingUntil && !views.some(function (v) { return v.drag; })) return;
@@ -1635,7 +1646,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
       if (!moving && !v.dirty) return;
       v.dirty = false;
       var pw = v.cv.width, ph = v.cv.height;
-      if (pw > bufW || ph > bufH) { bufW = Math.max(bufW, pw); bufH = Math.max(bufH, ph); renderer.setSize(bufW, bufH, false); }
+      if (pw > bufW || ph > bufH) { bufW = Math.max(bufW, Math.ceil(pw * 1.25)); bufH = Math.max(bufH, Math.ceil(ph * 1.25)); renderer.setSize(bufW, bufH, false); }
       v.pivot.rotation.y = v.rot;
       var aspect = v.w / v.h, vf = v.cam.fov * PI / 180, hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
       var d = Math.max(v.radius / Math.sin(vf / 2), v.radius / Math.sin(hf / 2)) * (v.zoom || 0.84);
