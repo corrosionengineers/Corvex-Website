@@ -1282,6 +1282,27 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     [function () { return skRoll(0.32, 0.08, 1.2, GD.virgin, 1.1); }, 1.6, -0.5],
     [function () { return skRoll(0.24, 0.07, 0.8, GD.virgin, 0); }, 0.8, 0.5],
     [function () { return skRoll(0.18, 0.06, 0.5, GD.virgin, 0); }, 0.55, -0.2]], { w: 3.6, gap: 0.22 }); };
+  // realistic loosely-wound skived roll: spiral sheet with thickness, optional flat tail; axis along Z, sits on floor
+  function spiralRoll(r0, turns, pitch, t, W, mat, tail, endA) {
+    endA = endA == null ? -PI / 2 : endA; var N = Math.round(turns * 90), out = [], inn = [], Rout = r0 + pitch * turns;
+    var th1 = endA + turns * TAU;   // start (inner) angle so spiral ends at endA
+    for (var i = 0; i <= N; i++) { var f = i / N, th = th1 - f * turns * TAU, r = r0 + pitch * turns * f; out.push([r * Math.cos(th), Rout + r * Math.sin(th)]); inn.push([(r - t) * Math.cos(th), Rout + (r - t) * Math.sin(th)]); }
+    if (tail) { var e = out[out.length - 1]; out.push([e[0] - tail, 0.0]); inn.push([e[0] - tail, t]); }
+    var sh = new T.Shape(); sh.moveTo(out[0][0], out[0][1]); out.forEach(function (p, k) { if (k) sh.lineTo(p[0], p[1]); });
+    for (var k = inn.length - 1; k >= 0; k--) sh.lineTo(inn[k][0], inn[k][1]); sh.closePath();
+    var m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: W, bevelEnabled: false, curveSegments: 4, steps: 1 }), mat); m.position.z = -W / 2;
+    var g = new T.Group(); g.add(m); return g; }
+  B['p-skived-sheets'] = function () { var V = GD.virgin; return family([
+    [function () { var g = new T.Group(), r = spiralRoll(0.16, 9, 0.05, 0.022, 1.3, V, 0); r.rotation.x = -PI / 2; r.position.y = 0; var w = new T.Group(); w.add(r); var b = new T.Box3().setFromObject(w); r.position.y -= b.min.y; g.add(w); return g; }, 1.1],
+    [function () { return spiralRoll(0.14, 7, 0.035, 0.02, 1.5, V, 1.6); }, 2.0, -0.55],
+    [function () { return spiralRoll(0.1, 6, 0.03, 0.016, 1.0, V, 0.9); }, 1.25, 0.45]], { w: 3.4, gap: 0.25 }); };
+  B['p-skived-sheets'] = function () { var V = GD.virgin;
+    function stand(r0, tn, p, t, W) { return function () { var g = new T.Group(), r = spiralRoll(r0, tn, p, t, W, V, 0); r.rotation.x = -PI / 2; var w = new T.Group(); w.add(r); var b = new T.Box3().setFromObject(w); r.position.y -= b.min.y; g.add(w); return g; }; }
+    return family([
+      [function () { return skBillet(0.62, 1.7, V, 1.1); }, 1.75, -0.6],
+      [stand(0.16, 10, 0.045, 0.022, 1.3), 1.0],
+      [function () { return spiralRoll(0.14, 8, 0.035, 0.02, 1.5, V, 0.75); }, 1.45, 0.35],
+      [stand(0.12, 7, 0.035, 0.018, 0.8), 0.7]], { w: 3.0, gap: 0.14 }); };
 
 
   /* ---------- contact shadow ---------- */
