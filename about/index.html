@@ -1194,8 +1194,8 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   var GD = {
     virgin: std(0xf3f4f2, 0.5, 0, { clearcoat: 0.2, clearcoatRoughness: 0.6 }),
     glass: std(0x737a82, 0.6, 0, { envMapIntensity: 0.6 }), carbon: std(0x070809, 0.5, 0.05, { envMapIntensity: 0.3 }), bronze: std(0x3e2410, 0.6, 0.12, { envMapIntensity: 0.6 }),
-    graphite: std(0x34373c, 0.6, 0.1), moly: std(0x5d6a78, 0.5, 0.15), peek: M.peek,
-    peekGF: std(0x9b8a6c, 0.55, 0), peekCF: std(0x1a1b1e, 0.38, 0.1, { clearcoat: 0.5, clearcoatRoughness: 0.3 })
+    graphite: std(0x34373c, 0.6, 0.1), moly: std(0x5d6a78, 0.5, 0.15), peek: std(0x8c6331, 0.45, 0, { clearcoat: 0.3, clearcoatRoughness: 0.4, envMapIntensity: 0.6 }),
+    peekGF: std(0x6e6352, 0.58, 0, { envMapIntensity: 0.55 }), peekCF: std(0x0c0c0d, 0.4, 0.08, { clearcoat: 0.45, clearcoatRoughness: 0.3, envMapIntensity: 0.35 })
   };
   function pk(R, mat, metal) { var g = new T.Group(), r = R * 0.6;
     [0, 1].forEach(function (i) { var x = ring(R, r, R * 0.28, mat, { segments: i ? 6 : 3, gap: 0.05 }); x.position.y = i * R * 0.3; g.add(x);
@@ -1383,6 +1383,11 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     [one(function () { return hoseBarb(V); }), 0.32], [one(function () { return gear(0.4, 18, 0.12, 0.1, V); }), 0.62], [one(function () { return perfDisc(0.42, 0.06, V); }), 0.62],
     [one(function () { return ring(0.32, 0.2, 0.12, GD.carbon, { gap: 0, bevel: 0.008 }); }), 0.5], [function () { var g = new T.Group(), s = new T.Mesh(new T.SphereGeometry(0.2, 48, 32), V); s.position.y = 0.2; g.add(s); return g; }, 0.36],
     [one(function () { return ring(0.42, 0.34, 0.05, RED, { gap: 0 }); }), 0.62], [one(function () { return ring(0.3, 0.2, 0.06, MOD, { gap: 0 }); }), 0.46]], { w: 3.9, gap: 0.14 }); };
+  B['p-peek-stock'] = function () { var P = GD.peek, G = GD.peekGF, C = GD.peekCF; return family([
+    [lyr(0.26, 1.8, P, -0.25), 1.8], [one(function () { return sheet(1.2, 0.1, 0.85, G); }), 1.2, 0.2], [lyt(0.3, 0.18, 1.0, C, 0.35), 1.0],
+    [one(function () { var g = new T.Group(); g.add(valvePlate(0.55, 0.13, 0.05, P)); return g; }), 0.95], [one(function () { var g = new T.Group(); g.add(valvePlate(0.5, 0.12, 0.05, C)); return g; }), 0.82],
+    [one(function () { return seatRing(0.4, 0.22, 0.16, P); }), 0.72], [one(function () { return gear(0.5, 22, 0.15, 0.12, P); }), 0.85],
+    [one(function () { return flangedBush(C); }), 0.55], [one(function () { return lband(0.4, 0.33, 0.2, 0.09, 0.3, 0, 0, 0, C); }), 0.72], [one(function () { return ring(0.36, 0.24, 0.12, G, { gap: 0, bevel: 0.008 }); }), 0.6], [one(function () { return chamferBush(P); }), 0.55]], { w: 4.6, gap: 0.12 }); };
 
 
   /* ---------- contact shadow ---------- */
