@@ -1195,14 +1195,16 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   };
   function pk(R, mat, metal) { var g = new T.Group(), r = R * 0.6;
     [0, 1].forEach(function (i) { var x = ring(R, r, R * 0.28, mat, { segments: i ? 6 : 3, gap: 0.05 }); x.position.y = i * R * 0.3; g.add(x);
-      var sp = spring(R, R * 0.06, 70, R * 0.024, M.steel); sp.position.y = i * R * 0.3 + R * 0.14; g.add(sp); });
+      var sp = spring(R * 0.985, R * 0.028, 120, R * 0.011, M.steel); sp.position.y = i * R * 0.3 + R * 0.14; g.add(sp); });
     return g; }
   B['cat-compressor'] = function () { return family([
-    [one(function () { var g = new T.Group(); for (var i = 0; i < 3; i++) { var x = ring(0.5, 0.41, 0.12, M.carbon, { gap: 0.04 }); x.position.y = i * 0.135; x.rotation.y = i * 1.3; g.add(x); } return g; }), 1.2],
+    [one(function () { var g = new T.Group(), a = lband(0.5, 0.425, 0.13, 0.09, 0.3, 0, 0, 0, GD.carbon); a.position.y = 0.065; a.rotation.y = -0.8; g.add(a); return g; }), 1.15],
     [one(function () { var g = new T.Group(), rb = lband(0.5, 0.44, 0.34, 0.12, 0.45, 14, 0.09, 0.025, std(0x3b2414, 0.6, 0.15)); rb.position.y = 0.17; rb.rotation.y = -0.9; g.add(rb); return g; }), 1.2],
-    [one(function () { var g = new T.Group(); g.add(valvePlate(0.5, 0.12, 0.045, M.peek)); return g; }), 1.0],
-    [one(function () { return pk(0.23, M.carbon); }), 0.46], [one(function () { return ring(0.23, 0.13, 0.09, M.peek, { gap: 0 }); }), 0.46],
-    [one(function () { return pk(0.21, M.bronze); }), 0.42]], { w: 4.0 }); };
+    [one(function () { var g = new T.Group(), h = 0.26, m = GD.peekCF;
+        var lo = ring(0.4, 0.33, h / 2, m, { gap: 0.14 }); var hi = ring(0.4, 0.33, h / 2, m, { gap: 0.14 }); hi.position.y = h / 2; hi.rotation.y = 0.42;
+        var w = new T.Group(); w.add(lo); w.add(hi); w.rotation.y = -1.45; g.add(w); return g; }), 0.92],
+    [one(function () { return pk(0.21, M.bronze); }), 0.42], [one(function () { var g = new T.Group(); g.add(ring(0.23, 0.13, 0.1, M.peek, { segments: 3, gap: 0.07 })); var sp = spring(0.23 * 0.985, 0.23 * 0.028, 120, 0.23 * 0.011, M.steel); sp.position.y = 0.05; g.add(sp); return g; }), 0.46], [one(function () { return pk(0.23, M.carbon); }), 0.46],
+    [one(function () { var g = new T.Group(); g.add(valvePlate(0.5, 0.12, 0.045, M.peek)); return g; }), 0.85]], { w: 3.9, gap: 0.14 }); };
   B['cat-ptfe'] = function () { return family([
     [one(function () { return sheet(1.3, 0.1, 0.9, GD.virgin); }), 1.3], [one(function () { return rod(0.32, 1.5, GD.carbon); }), 1.45, 0.25], [one(function () { return tube(0.36, 0.24, 1.0, GD.glass); }), 1.0, -0.3],
     [one(function () { return bellows(1.0, 0.3, 0.22, 5, GD.virgin); }), 0.95, 0.2], [one(function () { return flangedBush(GD.bronze); }), 0.62], [one(function () { return ring(0.45, 0.33, 0.2, GD.graphite, { gap: 0.04 }); }), 0.72],
