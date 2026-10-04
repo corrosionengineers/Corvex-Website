@@ -1042,13 +1042,22 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
       var rg = ring(0.66, 0.6, 0.1, p[1], { gap: 0.04 }); rg.rotation.z = PI / 2; rg.position.x = p[0]; g.add(rg);
     });
     var rider = ring(0.665, 0.6, 0.32, M.bronzeF, { gap: 0.03 }); rider.rotation.z = PI / 2; rider.position.x = 0.55; g.add(rider);
-    [-1.05, -0.95, -0.85, -0.75].forEach(function (x, i) {
-      var pk = ring(0.2, 0.121, 0.07, M.carbon, { segments: 3, gap: 0.08 }); pk.rotation.z = PI / 2; pk.position.x = x; g.add(pk);
+    // rod packing: radial + tangential cut ring pairs, each held by a garter spring
+    [-0.72, -0.92, -1.12].forEach(function (x) {
+      var a = ring(0.2, 0.121, 0.065, M.carbon, { segments: 3, gap: 0.07 }); a.rotation.z = PI / 2; a.position.x = x; g.add(a);
+      var b = ring(0.2, 0.121, 0.065, M.carbon, { segments: 6, gap: 0.05 }); b.rotation.z = PI / 2; b.position.x = x - 0.075; g.add(b);
+      [x, x - 0.075].forEach(function (sx) { var sp = spring(0.2, 0.014, 80, 0.0055, M.steel); sp.rotation.z = PI / 2; sp.position.x = sx; g.add(sp); });
+    });
+    // metallic oil scraper rings (bronze) with garter springs
+    [-1.62, -1.75].forEach(function (x) {
+      var sc = ring(0.19, 0.121, 0.075, M.bronze, { segments: 3, gap: 0.06 }); sc.rotation.z = PI / 2; sc.position.x = x; g.add(sc);
+      var sp = spring(0.19, 0.014, 80, 0.0055, M.steel); sp.rotation.z = PI / 2; sp.position.x = x; g.add(sp);
     });
     function mark(name, x, y, z) { var o = new T.Object3D(); o.position.set(x, y, z); o.userData.label = name; g.add(o); }
     mark('Piston rings', 0.12, 0.66, 0);
     mark('Rider ring', 0.55, 0.665, 0);
-    mark('Packing rings', -0.9, 0.2, 0);
+    mark('Packing rings', -0.92, 0.2, 0);
+    mark('Oil scraper rings', -1.68, 0.19, 0);
     if (scale) g.scale.setScalar(scale);
     return g;
   }
@@ -1084,11 +1093,33 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     'replacement-spares': function () { return piston(); },
     'cutaway': function () { return cutaway(); },
     'compressor-oil': function () {
-      var g = new T.Group();
-      var d = new T.Mesh(new T.CylinderGeometry(0.62, 0.62, 1.7, 64), M.blue); g.add(d);
-      [-0.45, 0.45].forEach(function (y) { var t = new T.Mesh(new T.TorusGeometry(0.63, 0.03, 8, 80), M.blue); t.rotation.x = PI / 2; t.position.y = y; g.add(t); });
-      var band = new T.Mesh(new T.CylinderGeometry(0.625, 0.625, 0.3, 64, 1, true), M.red); band.position.y = 0.1; g.add(band);
-      var can = new T.Mesh(new T.CylinderGeometry(0.3, 0.3, 0.9, 48), M.yellow); can.position.set(1.05, -0.4, 0.35); g.add(can);
+      var g = new T.Group(), H = 1.76, R0 = 0.58;
+      var paint = std(0x122038, 0.42, 0.55, { clearcoat: 0.55, clearcoatRoughness: 0.35 });
+      var rim = std(0x9aa1a9, 0.32, 1), lid = std(0x1d2c45, 0.5, 0.5, { clearcoat: 0.3 });
+      function labTex(sub) {
+      var cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; var x = cv.getContext('2d');
+      x.fillStyle = '#f3f4f2'; x.fillRect(0, 0, 1024, 512); x.fillStyle = '#1f6bff'; x.fillRect(0, 0, 1024, 18); x.fillRect(0, 494, 1024, 18);
+      x.fillStyle = '#121417'; x.textAlign = 'center'; x.font = '700 104px Poppins, Arial, sans-serif'; x.fillText('COMPRESSOR', 512, 195);
+      x.font = '700 92px Poppins, Arial, sans-serif'; x.fillStyle = '#1f6bff'; x.fillText('OIL', 512, 300);
+      x.font = '500 40px Poppins, Arial, sans-serif'; x.fillStyle = '#5d6570'; x.fillText(sub, 512, 380);
+      var tex = new T.CanvasTexture(cv); tex.encoding = T.sRGBEncoding; tex.anisotropy = 4; return tex; }
+      var tex = labTex('ISO VG 68 / 100  ·  210 L'), tex2 = labTex('ISO VG 68 / 100  ·  20 L');
+      var d = new T.Group();
+      d.add(new T.Mesh(new T.CylinderGeometry(R0, R0, H, 96), paint));
+      [-H / 2 + 0.01, H / 2 - 0.01].forEach(function (y) { var c = new T.Mesh(new T.TorusGeometry(R0 + 0.004, 0.026, 12, 120), rim); c.rotation.x = PI / 2; c.position.y = y; d.add(c); });
+      [-H * 0.17, H * 0.17].forEach(function (y) { var t = new T.Mesh(new T.TorusGeometry(R0 + 0.006, 0.022, 12, 120), paint); t.rotation.x = PI / 2; t.position.y = y; d.add(t); });
+      var top = new T.Mesh(new T.CylinderGeometry(R0 - 0.02, R0 - 0.02, 0.01, 96), lid); top.position.y = H / 2 - 0.004; d.add(top);
+      [[0.3, 0.12, 0.085], [-0.28, -0.18, 0.045]].forEach(function (b) { var bung = new T.Mesh(new T.CylinderGeometry(b[2], b[2], 0.035, 32), rim); bung.position.set(b[0], H / 2 + 0.012, b[1]); d.add(bung); });
+      d.add(new T.Mesh(new T.CylinderGeometry(R0 + 0.003, R0 + 0.003, H * 0.27, 96, 1, true, -0.95, 1.9), new T.MeshStandardMaterial({ map: tex, roughness: 0.6 })));
+      d.position.set(-0.42, H / 2, 0); d.rotation.y = 0.15; g.add(d);
+      var pail = new T.Group(), ph = 0.62;
+      pail.add(new T.Mesh(new T.CylinderGeometry(0.34, 0.3, ph, 80), paint));
+      [ph / 2 - 0.03, ph / 2 - 0.09].forEach(function (y) { var r = new T.Mesh(new T.TorusGeometry(0.34 - (0.04 * (ph / 2 - y)), 0.014, 10, 90), paint); r.rotation.x = PI / 2; r.position.y = y; pail.add(r); });
+      var pl = new T.Mesh(new T.CylinderGeometry(0.355, 0.355, 0.05, 80), lid); pl.position.y = ph / 2 + 0.02; pail.add(pl);
+      var hd = new T.Mesh(new T.TorusGeometry(0.33, 0.009, 8, 60, PI), rim); hd.position.y = ph / 2 + 0.03; hd.rotation.y = 0.4; pail.add(hd);
+      var plab = new T.Mesh(new T.CylinderGeometry(0.335, 0.317, ph * 0.42, 80, 1, true, -0.9, 1.8), new T.MeshStandardMaterial({ map: tex2, roughness: 0.6 })); plab.position.y = -0.03; pail.add(plab);
+      pail.position.set(0.72, ph / 2, 0.42); pail.rotation.y = -0.25; g.add(pail);
+      g.position.y = -H / 2;
       return g;
     },
     'extruded-rods': function () { var g = new T.Group(); g.add(at(rod(0.16, 3.2, M.ptfe), 0, 0, -0.3)); g.add(at(rod(0.1, 2.8, M.ptfe), 0, -0.06, 0.15)); g.add(at(rod(0.06, 2.4, M.ptfe), 0, -0.1, 0.5)); return wrap(g, -0.25); },
