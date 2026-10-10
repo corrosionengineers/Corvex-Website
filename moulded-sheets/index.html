@@ -39,7 +39,17 @@
 .lgl{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}.lgl li{display:flex;flex-direction:column;gap:6px;background:none;border:0;padding:0}.lgl small{font-size:12.5px;color:#5d6570;text-align:center}
 .cust li.lgi{display:flex;flex-direction:column;gap:8px}.cust li.lgi .lgb{height:84px}
 @media(max-width:560px){.lgl{grid-template-columns:1fr}}
-.v3d.simg{cursor:default}.v3d.simg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:9%;box-sizing:border-box;-webkit-mask-image:radial-gradient(ellipse 50% 48% at 50% 50%,#000 45%,transparent 100%);mask-image:radial-gradient(ellipse 50% 48% at 50% 50%,#000 45%,transparent 100%)}
+.v3d>img.poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:9%;box-sizing:border-box;transition:opacity .3s;-webkit-mask-image:radial-gradient(ellipse 50% 48% at 50% 50%,#000 45%,transparent 100%);mask-image:radial-gradient(ellipse 50% 48% at 50% 50%,#000 45%,transparent 100%)}.v3d.live>img.poster{opacity:0}
+.cust.cust2{grid-template-columns:1fr 1fr;max-width:640px;margin-bottom:16px}.cust.cust2+.cust{margin-top:0}
+.proof-lg{display:flex!important;flex-direction:column;align-items:center;gap:6px;padding-block:28px}.proof-lg .lgl{width:100%;max-width:640px;margin-top:6px}
+.proof-lg .lgb{height:84px}
+@media(max-width:560px){.cust.cust2{grid-template-columns:1fr}}
+.nav-i{white-space:nowrap}.nav-i i{margin-left:1px}.bar-r{display:flex;align-items:center;gap:10px;flex:none}
+@media (min-width:981px) and (max-width:1180px){.bar{gap:14px}.nav{gap:0;justify-content:space-evenly}.nav-i{padding:10px 8px;font-size:14px;gap:4px}.nav-i.on::after{left:8px;right:8px}.bar-r .btn.sm{padding:10px 14px;font-size:14px;white-space:nowrap}}
+.nav-i{height:44px;box-sizing:border-box;line-height:1}
+@media (min-width:981px) and (max-width:1180px){.bar{gap:10px}.nav-i{padding:0 7px;font-size:13.5px}.bar-r .btn.sm{padding:0 12px;font-size:13.5px;height:44px}.brand .logo{transform:scale(.92);transform-origin:left center}}
+@media (min-width:981px) and (max-width:1180px){.bar-r .btn.sm span{display:none}.bar-r .btn.sm{width:44px;padding:0;justify-content:center}.bar-r .btn.sm::after{content:none}}
+@media (min-width:981px) and (max-width:1020px){.nav-i{padding:0 5px;font-size:13px}.brand .logo{transform:scale(.85)}}
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -673,6 +683,8 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
   function show() {
     var h = (location.hash || '#moulded-sheets').slice(1);
     if (h === 'main' || h === 'catalog') return;
+    var anchorEl = null;
+    if (names.indexOf(h) < 0 && h && document.getElementById(h)) { anchorEl = document.getElementById(h); var ar = anchorEl.closest('.route'); if (ar) h = ar.getAttribute('data-route'); }
     if (names.indexOf(h) < 0) h = 'home';
     var cur = null;
     routes.forEach(function (r) { var on = r.getAttribute('data-route') === h; r.hidden = !on; if (on) cur = r; });
@@ -687,7 +699,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
       var hrefs = $$('.dd a', d).map(function (a) { return a.getAttribute('href').replace(/^\/|\/$/g, '') || 'home'; });
       $('.dd-btn', d).classList.toggle('on', hrefs.indexOf(h) > -1);
     });
-    window.scrollTo(0, 0);
+    if (anchorEl) { setTimeout(function () { anchorEl.scrollIntoView(); }, 60); } else window.scrollTo(0, 0);
     var t = cur && $('h1', cur);
   }
   window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (ROUTES.indexOf(h) > -1 && names.indexOf(h) < 0) { location.href = h === 'home' ? '/' : '/' + h + '/'; return; } show(); });
@@ -1192,6 +1204,7 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     lb('Piston rings', 0.28, 0.67, 0); lb('Rider ring', 0.85, 0.675, 0); lb('Packing rings', -0.9, 0.27, 0);
     lb('Pressure breaker', -0.45, 0.27, 0); lb('Oil scraper rings', -2.02, 0.25, 0); lb('PEEK valve plate', 2.15, 0.52, 0.45); return g; };
   B.fep = fluoro(0xe8f3f8, true); B.pfa = fluoro(0xf0f5f7, true); B.pctfe = fluoro(0xe2e9ef, true); B.pvdf = fluoro(0xf4f3ec, false);
+
   /* ---------- category families: real-looking groups, packed in rows (big at back, small in front), no overlaps ---------- */
   function family(list, opt) {
     opt = opt || {}; var gap = opt.gap || 0.24, Wmax = opt.w || 4.2, g = new T.Group(), items = [];
@@ -1573,6 +1586,27 @@ h3,h4{letter-spacing:-.01em;font-weight:600}
     var pw = Math.max(1, Math.round(w * DPR)), ph = Math.max(1, Math.round(h * DPR));
     if (v.cv.width !== pw || v.cv.height !== ph) { v.cv.width = pw; v.cv.height = ph; }
   }
+  var BZD = std(0x7a5226, 0.32, 0.9, { envMapIntensity: 0.6 });
+  var BZT = std(0x22120a, 0.34, 0.8, { envMapIntensity: 0.5 });
+  /* ---- packing / wiper rings: garter spring seated in an OD groove; rings shown standing, 3/4 view ---- */
+  var DARKH = std(0x070708, 0.9, 0);
+  function stackG(make, R, h, gw, gd) { var g = new T.Group(), a = (h - gw) / 2;
+    var p1 = make(R, a); g.add(p1); var p2 = make(R - gd, gw); p2.position.y = a; g.add(p2); var p3 = make(R, a); p3.position.y = a + gw; g.add(p3);
+    var rc = gd * 0.56, sp = spring(R - gd + rc, rc, Math.round(R * 200), rc * 0.3, M.steel); sp.position.y = a + gw / 2; g.add(sp); return g; }
+  function radialG(R, mat, seg) { var r = R * 0.58, h = R * 0.3; return stackG(function (RR, hh) { return ring(RR, r, hh, mat, { segments: seg || 3, gap: 0.045, bevel: 0.004 }); }, R, h, h * 0.34, R * 0.075); }
+  function tangG(R, mat) { var r = R * 0.58, h = R * 0.3; return stackG(function (RR, hh) { return tanRing(RR, r, hh, mat, 3, 0.03); }, R, h, h * 0.34, R * 0.075); }
+  function backupR(R, mat, seg) { return ring(R * 0.97, R * 0.58, R * 0.24, mat, { segments: seg || 1, gap: seg ? 0.04 : 0, bevel: 0.004 }); }
+  function wiperG(R, mat) { var r = R * 0.74, h = R * 0.26, g = stackG(function (RR, hh) { return ring(RR, r, hh, mat, { segments: 3, gap: 0.04, bevel: 0.004 }); }, R, h, h * 0.34, R * 0.06);
+    var n = 10; for (var i = 0; i < n; i++) { var a = i * TAU / n + 0.3, d = new T.Mesh(new T.CylinderGeometry(R * 0.05, R * 0.05, 0.004, 24), DARKH); d.position.set((r + (R - r) * 0.5) * Math.cos(a), h + 0.002, (r + (R - r) * 0.5) * Math.sin(a)); g.add(d); }
+    var lip = ring(r + R * 0.02, r - R * 0.025, h * 0.2, mat, { gap: 0 }); lip.position.y = h * 0.4; g.add(lip); return g; }
+  function stand(obj, ry) { var w = new T.Group(); obj.rotation.x = 0.55; var y = new T.Group(); y.add(obj); y.rotation.y = ry == null ? -0.42 : ry; w.add(y); return function () { return w; }; }
+  function sb(fn, ry) { return function () { return stand(fn(), ry)(); }; }
+
+  var PKF = {
+    'pressure-breakers': function () { return family([[sb(function () { return radialG(0.5, GD.carbon, 3); }), 1.0], [sb(function () { return backupR(0.5, BZT); }), 1.0]], { w: 3.4, gap: 0.08 }); },
+    'packing-rings': function () { return family([[sb(function () { return radialG(0.5, GD.carbon, 3); }), 1.0], [sb(function () { return tangG(0.5, GD.carbon); }), 1.0]], { w: 3.4, gap: 0.08 }); },
+    'oil-wiper-scraper': function () { return family([[sb(function () { return wiperG(0.5, BZT); }), 1.0], [sb(function () { return wiperG(0.5, BZT); }), 1.0]], { w: 3.4, gap: 0.08 }); } };
+  Object.keys(PKF).forEach(function (k) { B[k] = PKF[k]; B['p-' + k] = PKF[k]; });
   function makeView(el) {
     var key = el.getAttribute('data-model');
     if (!B[key] || el.classList.contains('static')) return null;
